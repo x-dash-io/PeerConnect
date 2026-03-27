@@ -1,0 +1,9 @@
+export const UPLOAD_MAX_SIZE_BYTES = 200 * 1024 * 1024 // 200MB
+export const UPLOAD_CHUNK_SIZE_BYTES = 10 * 1024 * 1024 // 10MB per part
+export const UPLOAD_MAX_CONCURRENT_PARTS = 3
+export const MESSAGE_PAGE_SIZE = 50
+export const TYPING_TIMEOUT_MS = 3000
+export const PRESENCE_HEARTBEAT_INTERVAL_MS = 60_000 // 1 min
+export const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+export const SUPPORTED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"]
+export const SUPPORTED_AUDIO_TYPES = ["audio/webm", "audio/ogg", "audio/mpeg", "audio/wav"]
