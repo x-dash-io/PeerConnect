@@ -27,6 +27,15 @@ export function SocketProvider({
     }
   }, [userId])
 
+  // Heartbeat to keep presence alive (every 60s)
+  useEffect(() => {
+    if (!socket) return
+    const interval = setInterval(() => {
+      socket.emit("presence:heartbeat")
+    }, 60_000)
+    return () => clearInterval(interval)
+  }, [socket])
+
   return <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
 }
 

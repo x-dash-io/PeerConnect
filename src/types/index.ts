@@ -13,15 +13,26 @@ export interface UserProfile {
   presence?: PresenceStatus
 }
 
+export interface ReplyPreview {
+  id: string
+  content: string | null
+  senderName: string | null
+}
+
 export interface Message {
   id: string
   conversationId: string
   senderId: string
   sender?: UserProfile
+  senderName?: string | null
+  senderImage?: string | null
   content: string | null
   type: MessageType
   status: MessageStatus
+  replyToId?: string | null
+  replyTo?: ReplyPreview | null
   file?: FileAttachment
+  metadata?: Record<string, unknown> | null
   createdAt: string
 }
 

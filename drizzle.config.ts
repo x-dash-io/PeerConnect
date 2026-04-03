@@ -1,3 +1,6 @@
+import { loadEnvConfig } from "@next/env"
+loadEnvConfig(process.cwd())
+
 import type { Config } from "drizzle-kit"
 
 export default {
