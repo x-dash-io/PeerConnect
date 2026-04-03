@@ -1,65 +1,205 @@
-import Image from "next/image"
+"use client"
 
-export default function Home() {
+import { MessageCircle, Shield, Zap, Users, ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/shared/Logo"
+import { AnimatedBackground, GridOverlay } from "@/components/shared/AnimatedBackground"
+import { motion } from "framer-motion"
+import Link from "next/link"
+
+const features = [
+  {
+    icon: MessageCircle,
+    title: "Real-Time Messaging",
+    description: "Instant delivery with read receipts, typing indicators, and rich media support.",
+  },
+  {
+    icon: Users,
+    title: "Role-Based Profiles",
+    description:
+      "Tailored experiences for peers, freelancers, and businesses — all in one platform.",
+  },
+  {
+    icon: Shield,
+    title: "End-to-End Privacy",
+    description: "Your conversations stay yours. Enterprise-grade security by default.",
+  },
+  {
+    icon: Zap,
+    title: "Lightning Fast",
+    description: "Built on modern infrastructure for sub-100ms message delivery worldwide.",
+  },
+]
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.3,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+    },
+  },
+}
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="relative min-h-screen bg-bg-deep overflow-hidden">
+      <AnimatedBackground />
+      <GridOverlay />
+
+      {/* Navigation */}
+      <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-12 lg:px-20">
+        <Logo />
+        <div className="flex items-center gap-3">
+          <Link href="/login">
+            <Button
+              variant="ghost"
+              className="text-text-medium hover:text-text-high hover:bg-bg-muted"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              Sign In
+            </Button>
+          </Link>
+          <Link href="/register">
+            <Button className="bg-brand text-white hover:bg-brand-hover">Get Started</Button>
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </nav>
+
+      {/* Hero */}
+      <main className="relative z-10 mx-auto max-w-5xl px-6 pt-20 pb-32 md:pt-32 md:pb-40 lg:px-20">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col items-center text-center"
+        >
+          {/* Badge */}
+          <motion.div
+            variants={itemVariants}
+            className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/[0.08] px-4 py-1.5 text-sm text-brand"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <span className="inline-block size-1.5 rounded-full bg-presence animate-pulse" />
+            Now in early access
+          </motion.div>
+
+          {/* Logo mark */}
+          <motion.div variants={itemVariants} className="mb-8">
+            <Logo
+              href=""
+              imageSize={88}
+              showText={false}
+              className="drop-shadow-[0_0_40px_rgba(99,102,241,0.3)]"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </motion.div>
+
+          <motion.h1
+            variants={itemVariants}
+            className="max-w-3xl text-4xl font-extrabold tracking-tight text-text-high md:text-6xl lg:text-7xl leading-[1.1]"
           >
-            Documentation
-          </a>
-        </div>
+            Where professionals{" "}
+            <span className="text-gradient-indigo">connect and collaborate</span>
+          </motion.h1>
+
+          <motion.p
+            variants={itemVariants}
+            className="mt-6 max-w-xl text-lg text-text-medium md:text-xl"
+          >
+            A premium messaging platform built for peers, freelancers, and businesses. Fast,
+            private, and beautifully designed.
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div variants={itemVariants} className="mt-10 flex flex-col gap-4 sm:flex-row">
+            <Link href="/register">
+              <Button
+                size="lg"
+                className="h-12 gap-2 bg-brand px-8 text-white hover:bg-brand-hover active:scale-[0.98] transition-all"
+              >
+                Get Started Free
+                <ArrowRight className="size-4" />
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 border-border-main bg-transparent px-8 text-text-high hover:bg-bg-muted"
+              >
+                Sign In
+              </Button>
+            </Link>
+          </motion.div>
+        </motion.div>
+
+        {/* Features */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="mt-32 grid gap-6 sm:grid-cols-2 lg:mt-40"
+        >
+          {features.map((feature) => (
+            <div
+              key={feature.title}
+              className="group rounded-xl border border-border-main bg-bg-surface/50 p-6 transition-all duration-300 hover:border-brand/30 hover:bg-bg-surface hover:-translate-y-1"
+            >
+              <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-brand/10 text-brand transition-colors group-hover:bg-brand/15">
+                <feature.icon className="size-5" />
+              </div>
+              <h3 className="text-lg font-bold text-text-high">{feature.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-text-medium">{feature.description}</p>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Bottom CTA */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mt-32 flex flex-col items-center text-center lg:mt-48"
+        >
+          <h2 className="text-3xl font-bold text-text-high md:text-4xl">Ready to get started?</h2>
+          <p className="mt-4 text-text-medium max-w-md">
+            Join PeerConnect today and upgrade your professional communication experience.
+          </p>
+          <Link href="/register" className="mt-8">
+            <Button
+              size="lg"
+              className="h-12 gap-2 bg-brand px-10 text-white hover:bg-brand-hover active:scale-[0.98] transition-all"
+            >
+              Create Your Account
+              <ArrowRight className="size-4" />
+            </Button>
+          </Link>
+        </motion.div>
       </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-border-subtle px-6 py-12 text-center text-sm text-text-low md:px-12">
+        <div className="flex flex-col items-center gap-4">
+          <Logo
+            showText={false}
+            imageSize={24}
+            className="opacity-50 grayscale hover:grayscale-0 transition-all"
+          />
+          <p>&copy; {new Date().getFullYear()} PeerConnect. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   )
 }

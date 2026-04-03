@@ -1,12 +1,13 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { conversations, conversationParticipants, messages, users } from "@/lib/schema"
-import { eq, desc, sql } from "drizzle-orm"
+import { eq, and, ne, gt, desc, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const currentUserId = session.user.id
 
   // Get all conversations where user is a participant
   const userConversations = await db
@@ -14,13 +15,14 @@ export async function GET() {
       id: conversations.id,
       type: conversations.type,
       createdAt: conversations.createdAt,
+      lastReadAt: conversationParticipants.lastReadAt,
     })
     .from(conversations)
     .innerJoin(
       conversationParticipants,
       eq(conversations.id, conversationParticipants.conversationId),
     )
-    .where(eq(conversationParticipants.userId, session.user.id))
+    .where(eq(conversationParticipants.userId, currentUserId))
     .orderBy(desc(conversations.createdAt))
 
   // For each conversation, get participants and last message
@@ -45,7 +47,21 @@ export async function GET() {
         .orderBy(desc(messages.createdAt))
         .limit(1)
 
-      return { ...conv, participants, lastMessage: lastMessage || null }
+      // Count unread messages (from others, after lastReadAt)
+      const unreadConditions = [
+        eq(messages.conversationId, conv.id),
+        ne(messages.senderId, currentUserId),
+      ]
+      if (conv.lastReadAt) {
+        unreadConditions.push(gt(messages.createdAt, conv.lastReadAt))
+      }
+
+      const [{ count: unreadCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(messages)
+        .where(and(...unreadConditions))
+
+      return { ...conv, participants, lastMessage: lastMessage || null, unreadCount }
     }),
   )
 
@@ -70,8 +86,8 @@ export async function POST(req: Request) {
     LIMIT 1
   `)
 
-  if (existing.length > 0) {
-    return NextResponse.json({ id: existing[0].id })
+  if (existing.rows.length > 0) {
+    return NextResponse.json({ id: existing.rows[0].id })
   }
 
   // Create new conversation

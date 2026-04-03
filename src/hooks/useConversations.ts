@@ -1,0 +1,28 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+
+export function useConversations() {
+  return useQuery({
+    queryKey: ["conversations"],
+    queryFn: async () => {
+      const res = await fetch("/api/conversations")
+      if (!res.ok) throw new Error("Failed to fetch conversations")
+      return res.json()
+    },
+  })
+}
+
+export function useCreateConversation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (recipientId: string) => {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId }),
+      })
+      if (!res.ok) throw new Error("Failed to create conversation")
+      return res.json()
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations"] }),
+  })
+}

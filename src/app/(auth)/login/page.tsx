@@ -10,6 +10,7 @@ import Link from "next/link"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Logo } from "@/components/shared/Logo"
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -48,10 +49,6 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-extrabold text-gradient-indigo tracking-tight">PeerConnect</h1>
-      </div>
-
       <div className="rounded-xl border border-border-main bg-bg-surface p-6 sm:p-8">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-text-high">Welcome back</h2>

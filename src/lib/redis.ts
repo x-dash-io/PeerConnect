@@ -1,11 +1,41 @@
 import { Redis } from "@upstash/redis"
 
+const isUpstashConfigured =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+
+// In-memory store for local development without Redis
+const memoryStore = new Map<string, string>()
+
 // Upstash Redis for serverless-compatible operations
 // (presence tracking, rate limiting, caching)
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
+export const redis = isUpstashConfigured
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  : // Mock redis client for local development
+    ({
+      set: async (key: string, value: string) => {
+        memoryStore.set(key, typeof value === "string" ? value : JSON.stringify(value))
+        return "OK"
+      },
+      get: async (key: string) => {
+        const val = memoryStore.get(key)
+        if (!val) return null
+        try {
+          return JSON.parse(val)
+        } catch {
+          return val
+        }
+      },
+      del: async (key: string) => (memoryStore.delete(key) ? 1 : 0),
+    } as unknown as Redis)
+
+if (!isUpstashConfigured) {
+  console.warn(
+    "[Redis] UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is missing. Redis functionality is disabled.",
+  )
+}
 
 // Presence helpers
 export const presenceKeys = {
