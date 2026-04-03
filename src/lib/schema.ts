@@ -1,14 +1,4 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  boolean,
-  integer,
-  pgEnum,
-  varchar,
-  jsonb,
-  index,
-} from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, integer, pgEnum, jsonb, index } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
 // Enums
@@ -108,6 +98,7 @@ export const messages = pgTable(
     content: text("content"), // null for file-only messages
     type: messageTypeEnum("type").default("TEXT").notNull(),
     status: messageStatusEnum("status").default("SENT").notNull(),
+    replyToId: text("reply_to_id"),
     metadata: jsonb("metadata"), // for file references, audio duration, etc.
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -131,6 +122,7 @@ export const files = pgTable("files", {
   uploadId: text("upload_id"), // S3 multipart upload ID
   thumbnailS3Key: text("thumbnail_s3_key"), // for images/videos
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
 // Bulk message campaigns
