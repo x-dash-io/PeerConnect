@@ -42,6 +42,8 @@
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
   --color-brand-subtle: var(--brand-subtle);
+  --color-brand-glow: var(--brand-glow);
+  --color-accent-cyan: var(--accent-cyan);
   --color-presence: var(--presence);
   --color-warn: var(--warn);
   --color-danger: var(--danger);
@@ -78,101 +80,146 @@
 
 /*
  * PeerConnect Design Tokens
- * Dark-first palette — no light mode toggle (v1)
+ * "Pearl Slate" Light Mode — cool-tinted, premium feel
  */
 :root {
-  /* Backgrounds */
-  --bg-deep: #09090b;
-  --bg-surface: #161618;
-  --bg-muted: #232326;
-  --bg-elevated: #2a2a2e;
+  /* Backgrounds — cool pearl with subtle blue undertone */
+  --bg-deep: #f0f2f8;
+  --bg-surface: #f8f9fc;
+  --bg-muted: #e4e8f2;
+  --bg-elevated: #d5daea;
 
-  /* Text */
-  --text-high: #ededed;
-  --text-medium: #a1a1aa;
-  --text-low: #52525b;
+  /* Text — deep navy for rich contrast */
+  --text-high: #121629;
+  --text-medium: #4a5170;
+  --text-low: #8991ad;
 
-  /* Brand */
+  /* Brand — vibrant indigo */
   --brand: #6366f1;
   --brand-hover: #4f46e5;
-  --brand-subtle: rgba(99, 102, 241, 0.12);
+  --brand-subtle: rgba(99, 102, 241, 0.08);
+  --brand-glow: rgba(99, 102, 241, 0.15);
+  --accent-cyan: #06b6d4;
 
   /* Semantic */
   --presence: #10b981;
   --warn: #f59e0b;
-  --danger: #ef4444;
+  --danger: #f43f5e;
 
   /* Borders */
-  --border-main: #27272a;
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-main: #d0d7e5;
+  --border-subtle: rgba(15, 23, 42, 0.06);
 
-  /* shadcn/ui variables → PeerConnect dark palette */
-  --background: #09090b;
-  --foreground: #ededed;
-  --card: #161618;
-  --card-foreground: #ededed;
-  --popover: #1c1c1f;
-  --popover-foreground: #ededed;
+  /* shadcn/ui variables → PeerConnect light palette */
+  --background: #f0f2f8;
+  --foreground: #121629;
+  --card: #f8f9fc;
+  --card-foreground: #121629;
+  --popover: #f8f9fc;
+  --popover-foreground: #121629;
   --primary: #6366f1;
   --primary-foreground: #ffffff;
-  --secondary: #232326;
-  --secondary-foreground: #ededed;
-  --muted: #232326;
-  --muted-foreground: #a1a1aa;
-  --accent: #232326;
-  --accent-foreground: #ededed;
-  --destructive: #ef4444;
-  --border: #27272a;
-  --input: #27272a;
+  --secondary: #e4e8f2;
+  --secondary-foreground: #121629;
+  --muted: #e4e8f2;
+  --muted-foreground: #4a5170;
+  --accent: #e4e8f2;
+  --accent-foreground: #121629;
+  --destructive: #f43f5e;
+  --border: #d0d7e5;
+  --input: #d0d7e5;
   --ring: #6366f1;
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 
   /* Sidebar */
-  --sidebar: #0e0e10;
-  --sidebar-foreground: #ededed;
+  --sidebar: #eceef6;
+  --sidebar-foreground: #121629;
   --sidebar-primary: #6366f1;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #232326;
-  --sidebar-accent-foreground: #ededed;
-  --sidebar-border: #27272a;
+  --sidebar-accent: #e4e8f2;
+  --sidebar-accent-foreground: #121629;
+  --sidebar-border: #d0d7e5;
   --sidebar-ring: #6366f1;
 
   /* Charts */
   --chart-1: #6366f1;
   --chart-2: #10b981;
   --chart-3: #f59e0b;
-  --chart-4: #ef4444;
-  --chart-5: #a1a1aa;
+  --chart-4: #f43f5e;
+  --chart-5: #8991ad;
+
+  color-scheme: light;
 }
 
-/* Duplicated for shadcn components that check .dark explicitly */
+/*
+ * "Deep Space" Dark Mode — rich navy, premium depth
+ */
 .dark {
-  --background: #09090b;
-  --foreground: #ededed;
-  --card: #161618;
-  --card-foreground: #ededed;
-  --popover: #1c1c1f;
-  --popover-foreground: #ededed;
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --secondary: #232326;
-  --secondary-foreground: #ededed;
-  --muted: #232326;
-  --muted-foreground: #a1a1aa;
-  --accent: #232326;
-  --accent-foreground: #ededed;
-  --destructive: #ef4444;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #6366f1;
-  --sidebar: #0e0e10;
-  --sidebar-foreground: #ededed;
-  --sidebar-primary: #6366f1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #232326;
-  --sidebar-accent-foreground: #ededed;
-  --sidebar-border: #27272a;
-  --sidebar-ring: #6366f1;
+  /* Backgrounds — deep navy-charcoal blend */
+  --bg-deep: #0a0e1a;
+  --bg-surface: #12182b;
+  --bg-muted: #1a2240;
+  --bg-elevated: #232e50;
+
+  /* Text */
+  --text-high: #e4e8f0;
+  --text-medium: #8b95b0;
+  --text-low: #4e5878;
+
+  /* Brand */
+  --brand: #818cf8;
+  --brand-hover: #6366f1;
+  --brand-subtle: rgba(129, 140, 248, 0.12);
+  --brand-glow: rgba(129, 140, 248, 0.2);
+  --accent-cyan: #22d3ee;
+
+  /* Semantic */
+  --presence: #34d399;
+  --warn: #fbbf24;
+  --danger: #fb7185;
+
+  /* Borders */
+  --border-main: #1f2b4a;
+  --border-subtle: rgba(140, 150, 190, 0.07);
+
+  /* shadcn/ui variables → PeerConnect dark palette */
+  --background: #0a0e1a;
+  --foreground: #e4e8f0;
+  --card: #12182b;
+  --card-foreground: #e4e8f0;
+  --popover: #161d33;
+  --popover-foreground: #e4e8f0;
+  --primary: #818cf8;
+  --primary-foreground: #0a0e1a;
+  --secondary: #1a2240;
+  --secondary-foreground: #e4e8f0;
+  --muted: #1a2240;
+  --muted-foreground: #8b95b0;
+  --accent: #1a2240;
+  --accent-foreground: #e4e8f0;
+  --destructive: #fb7185;
+  --border: #1f2b4a;
+  --input: #1f2b4a;
+  --ring: #818cf8;
+
+  /* Sidebar */
+  --sidebar: #0d1122;
+  --sidebar-foreground: #e4e8f0;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #0a0e1a;
+  --sidebar-accent: #1a2240;
+  --sidebar-accent-foreground: #e4e8f0;
+  --sidebar-border: #1f2b4a;
+  --sidebar-ring: #818cf8;
+
+  /* Charts */
+  --chart-1: #818cf8;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #fb7185;
+  --chart-5: #8b95b0;
+
+  color-scheme: dark;
 }
 
 @layer base {
@@ -182,7 +229,6 @@
 
   html {
     @apply font-sans;
-    color-scheme: dark;
   }
 
   body {
@@ -231,18 +277,56 @@
 }
 
 @layer utilities {
+  /* Contenteditable placeholder */
+  .rich-input:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-low);
+    pointer-events: none;
+  }
+
   .glass {
-    background: rgba(22, 22, 24, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: color-mix(in srgb, var(--bg-surface) 80%, transparent);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
     border: 1px solid var(--border-subtle);
   }
 
-  .text-gradient-indigo {
-    background: linear-gradient(135deg, #6366f1, #818cf8);
+  .glass-heavy {
+    background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .text-gradient-brand {
+    background: linear-gradient(135deg, var(--brand), var(--accent-cyan));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .text-gradient-indigo {
+    background: linear-gradient(135deg, #6366f1, #818cf8, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glow-brand {
+    box-shadow:
+      0 0 20px var(--brand-glow),
+      0 0 60px var(--brand-glow);
+  }
+
+  .glow-brand-sm {
+    box-shadow: 0 0 10px var(--brand-glow);
+  }
+
+  .surface-glow {
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 16px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 var(--border-subtle);
   }
 
   .skeleton-shimmer {
@@ -271,5 +355,21 @@
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Subtle animated gradient for hero sections */
+  @keyframes gradient-shift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
   }
 }

@@ -11,6 +11,7 @@ import { FileAttachmentCard } from "./FileAttachmentCard"
 import { ImagePreview } from "./ImagePreview"
 import { VideoPlayer } from "./VideoPlayer"
 import { AudioPlayer } from "./AudioPlayer"
+import { MarkdownRenderer } from "./MarkdownRenderer"
 import { format } from "date-fns"
 
 const COLLAPSED_CHAR_LIMIT = 400
@@ -44,32 +45,7 @@ export function MessageBubble({
       text = content.slice(0, COLLAPSED_CHAR_LIMIT) + "..."
     }
 
-    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g)
-
-    return parts.map((part, i) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return (
-          <strong key={i} className="font-bold">
-            {part.slice(2, -2)}
-          </strong>
-        )
-      }
-      if (part.startsWith("*") && part.endsWith("*")) {
-        return (
-          <em key={i} className="italic">
-            {part.slice(1, -1)}
-          </em>
-        )
-      }
-      if (part.startsWith("`") && part.endsWith("`")) {
-        return (
-          <code key={i} className="bg-white/[0.08] px-1 py-0.5 rounded text-xs font-mono">
-            {part.slice(1, -1)}
-          </code>
-        )
-      }
-      return part
-    })
+    return <MarkdownRenderer content={text} isSelf={isSelf} />
   }
 
   const renderMessageContent = () => {
@@ -130,14 +106,14 @@ export function MessageBubble({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
       className={cn(
         "group flex w-full rounded-2xl transition-colors duration-500",
         isSelf ? "justify-end" : "justify-start",
         isGrouped ? "mb-0.5" : "mb-0.5 mt-3",
-        isHighlighted && "bg-brand/10",
+        isHighlighted && "bg-brand/8",
       )}
     >
       <div
@@ -146,7 +122,7 @@ export function MessageBubble({
           isSelf ? "flex-row-reverse" : "flex-row",
         )}
       >
-        {/* Avatar — only for others, only on first in group */}
+        {/* Avatar */}
         {!isSelf && (
           <div className="w-7 shrink-0">
             {!isGrouped && (
@@ -161,9 +137,9 @@ export function MessageBubble({
         )}
 
         <div className="flex flex-col gap-0.5 min-w-0">
-          {/* Sender name — others only, first in group */}
+          {/* Sender name */}
           {!isSelf && !isGrouped && (
-            <span className="text-[10px] font-semibold text-text-medium ml-1 tracking-wide uppercase">
+            <span className="text-[10px] font-semibold text-text-low ml-1 tracking-wide uppercase">
               {message.senderName}
             </span>
           )}
@@ -172,15 +148,15 @@ export function MessageBubble({
           <div className="relative group/bubble">
             <div
               className={cn(
-                "relative px-3 py-2 text-[13.5px] leading-relaxed shadow-sm",
+                "relative px-3.5 py-2.5 text-[13.5px] leading-relaxed",
                 isSelf
-                  ? "bg-brand text-white rounded-2xl rounded-br-md"
-                  : "bg-bg-elevated text-text-high rounded-2xl rounded-tl-md",
+                  ? "bg-gradient-to-br from-brand to-brand-hover text-white rounded-2xl rounded-br-lg shadow-md shadow-brand/10"
+                  : "bg-bg-surface text-text-high rounded-2xl rounded-tl-lg border border-border-subtle surface-glow",
                 isGrouped && isSelf && "rounded-tr-2xl",
-                isGrouped && !isSelf && "rounded-tl-md",
+                isGrouped && !isSelf && "rounded-tl-lg",
               )}
             >
-              {/* Reply preview — click to scroll to original */}
+              {/* Reply preview */}
               {message.replyTo && (
                 <button
                   type="button"
@@ -189,7 +165,7 @@ export function MessageBubble({
                     "mb-2 rounded-lg px-2.5 py-1.5 border-l-2 text-xs text-left w-full transition-colors cursor-pointer",
                     isSelf
                       ? "bg-white/10 border-white/40 text-white/80 hover:bg-white/15"
-                      : "bg-bg-muted border-brand/60 text-text-medium hover:bg-bg-surface",
+                      : "bg-bg-muted border-brand/60 text-text-medium hover:bg-bg-elevated",
                   )}
                 >
                   <span
@@ -204,7 +180,6 @@ export function MessageBubble({
                 </button>
               )}
 
-              {/* Message content — dispatched by type */}
               {renderMessageContent()}
 
               {/* Read more/less */}
@@ -212,7 +187,7 @@ export function MessageBubble({
                 <button
                   onClick={() => setExpanded(!expanded)}
                   className={cn(
-                    "flex items-center gap-0.5 text-[11px] font-semibold mt-1 transition-colors",
+                    "flex items-center gap-0.5 text-[11px] font-semibold mt-1.5 transition-colors",
                     isSelf ? "text-white/80 hover:text-white" : "text-brand hover:text-brand-hover",
                   )}
                 >
@@ -229,16 +204,11 @@ export function MessageBubble({
               )}
 
               {/* Timestamp + status */}
-              <div
-                className={cn(
-                  "flex items-center gap-1.5 mt-1 select-none",
-                  isSelf ? "justify-end" : "justify-end",
-                )}
-              >
+              <div className="flex items-center gap-1.5 mt-1.5 select-none justify-end">
                 <span
                   className={cn(
                     "text-[10px] tabular-nums",
-                    isSelf ? "text-white/60" : "text-text-low",
+                    isSelf ? "text-white/50" : "text-text-low",
                   )}
                 >
                   {timestamp}
@@ -254,12 +224,12 @@ export function MessageBubble({
               </div>
             </div>
 
-            {/* Reply action — appears on hover */}
+            {/* Reply action */}
             {onReply && (
               <button
                 onClick={() => onReply(message)}
                 className={cn(
-                  "absolute top-1/2 -translate-y-1/2 size-7 rounded-full bg-bg-elevated border border-border-subtle flex items-center justify-center text-text-medium hover:text-text-high hover:bg-bg-muted transition-all opacity-0 group-hover/bubble:opacity-100 shadow-md",
+                  "absolute top-1/2 -translate-y-1/2 size-7 rounded-full bg-bg-surface border border-border-subtle flex items-center justify-center text-text-low hover:text-text-high hover:bg-bg-muted transition-all opacity-0 group-hover/bubble:opacity-100 shadow-md",
                   isSelf ? "-left-9" : "-right-9",
                 )}
               >
