@@ -9,7 +9,7 @@ export async function GET() {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const currentUserId = session.user.id
 
-  // Get all conversations where user is a participant
+  // Get all conversations where user is a participant, ordered by latest activity
   const userConversations = await db
     .select({
       id: conversations.id,
@@ -23,7 +23,11 @@ export async function GET() {
       eq(conversations.id, conversationParticipants.conversationId),
     )
     .where(eq(conversationParticipants.userId, currentUserId))
-    .orderBy(desc(conversations.createdAt))
+    .orderBy(
+      desc(
+        sql`COALESCE((SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = conversations.id), conversations.created_at)`,
+      ),
+    )
 
   // For each conversation, get participants and last message
   const enriched = await Promise.all(

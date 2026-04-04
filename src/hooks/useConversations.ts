@@ -8,6 +8,9 @@ export function useConversations() {
       if (!res.ok) throw new Error("Failed to fetch conversations")
       return res.json()
     },
+    // Re-fetch every 30s so relative timestamps ("2 min ago") stay fresh
+    // and read/unread counts update even if socket events are missed
+    refetchInterval: 30_000,
   })
 }
 
