@@ -32,7 +32,7 @@ export function ChatHeader({ conversationId, participants, currentUserId }: Chat
   if (!recipient) return null
 
   const presenceText = (() => {
-    if (presence === "online") return <span className="text-presence">Active now</span>
+    if (presence === "online") return <span className="text-presence font-medium">Active now</span>
     if (presence === "away") return <span className="text-warn">Away</span>
     if (lastSeen) {
       return `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`
@@ -42,11 +42,11 @@ export function ChatHeader({ conversationId, participants, currentUserId }: Chat
 
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-subtle bg-bg-surface px-4 glass">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-subtle glass-heavy px-4">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="flex md:hidden items-center justify-center size-8 rounded-lg text-text-medium hover:text-text-high hover:bg-bg-muted transition-colors"
+            className="flex md:hidden items-center justify-center size-9 rounded-xl text-text-medium hover:text-text-high hover:bg-bg-muted transition-colors"
           >
             <ArrowLeft className="size-5" />
           </Link>
@@ -61,24 +61,24 @@ export function ChatHeader({ conversationId, participants, currentUserId }: Chat
               <span className="font-semibold text-text-high leading-none">{recipient.name}</span>
               <RoleBadge role={recipient.role} />
             </div>
-            <span className="text-[10px] sm:text-xs text-text-medium">{presenceText}</span>
+            <span className="text-[11px] text-text-medium mt-0.5">{presenceText}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex text-text-medium hover:text-text-high"
+            className="hidden md:flex text-text-low hover:text-text-high hover:bg-bg-muted rounded-xl"
           >
-            <Phone className="size-5" />
+            <Phone className="size-[18px]" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex text-text-medium hover:text-text-high"
+            className="hidden md:flex text-text-low hover:text-text-high hover:bg-bg-muted rounded-xl"
           >
-            <Video className="size-5" />
+            <Video className="size-[18px]" />
           </Button>
 
           <DropdownMenu>
@@ -87,11 +87,11 @@ export function ChatHeader({ conversationId, participants, currentUserId }: Chat
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-text-medium hover:text-text-high"
+                  className="text-text-low hover:text-text-high hover:bg-bg-muted rounded-xl"
                 />
               }
             >
-              <MoreHorizontal className="size-5" />
+              <MoreHorizontal className="size-[18px]" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem className="gap-2">
@@ -109,7 +109,6 @@ export function ChatHeader({ conversationId, participants, currentUserId }: Chat
         </div>
       </header>
 
-      {/* Media gallery sheet — rendered outside header to overlay full page */}
       <MediaGallery
         conversationId={conversationId}
         open={galleryOpen}

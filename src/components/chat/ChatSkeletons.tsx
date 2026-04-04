@@ -42,7 +42,7 @@ export function SkeletonMessage({ isSelf }: { isSelf: boolean }) {
 /* ── Chat header skeleton ── */
 export function SkeletonChatHeader() {
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-subtle bg-bg-surface px-4 glass">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-subtle glass-heavy px-4">
       <div className="flex items-center gap-3">
         <Skeleton className="size-10 rounded-full" />
         <div className="flex flex-col gap-1.5">

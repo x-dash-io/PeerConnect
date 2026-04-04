@@ -2,7 +2,6 @@
 
 import { useSession } from "next-auth/react"
 import { formatDistanceToNow } from "date-fns"
-import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Conversation } from "@/types"
 import { AvatarWithPresence } from "@/components/shared/AvatarWithPresence"
@@ -22,7 +21,6 @@ export function ConversationListItem({
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
 
-  // Find the other participant (for DIRECT conversations)
   const otherParticipant =
     conversation.participants.find((p) => p.id !== currentUserId) || conversation.participants[0]
   const { status: presenceStatus } = usePresence(otherParticipant?.id)
@@ -39,17 +37,17 @@ export function ConversationListItem({
   }
 
   return (
-    <motion.div
-      whileHover={{ x: 2 }}
-      transition={{ duration: 0.12 }}
+    <div
       onClick={onClick}
       className={cn(
-        "group relative flex h-[72px] cursor-pointer items-center gap-3 px-4 transition-colors",
-        isActive ? "bg-brand-subtle" : "hover:bg-bg-muted",
+        "group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200",
+        isActive ? "bg-brand-subtle shadow-sm" : "hover:bg-bg-muted/70",
       )}
     >
-      {/* Active Indicator */}
-      {isActive && <div className="absolute left-0 top-0 h-full w-[3px] bg-primary" />}
+      {/* Active indicator */}
+      {isActive && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-[3px] rounded-r-full bg-brand" />
+      )}
 
       {/* Avatar */}
       <AvatarWithPresence
@@ -63,28 +61,38 @@ export function ConversationListItem({
       {/* Info */}
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate font-medium text-text-high">
+          <span
+            className={cn(
+              "truncate text-sm font-semibold",
+              unreadCount > 0 ? "text-text-high" : "text-text-high",
+            )}
+          >
             {otherParticipant?.name || otherParticipant?.email}
           </span>
-          <span className="shrink-0 text-xs text-text-medium">
+          <span className="shrink-0 text-[11px] text-text-low tabular-nums">
             {lastMessage
               ? formatTimestamp(lastMessage.createdAt)
               : formatTimestamp(conversation.createdAt)}
           </span>
         </div>
 
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-sm text-text-medium">
+        <div className="flex items-center justify-between gap-2 mt-0.5">
+          <p
+            className={cn(
+              "truncate text-[13px]",
+              unreadCount > 0 ? "text-text-high font-medium" : "text-text-medium",
+            )}
+          >
             {lastMessage?.content || "No messages yet"}
           </p>
 
           {unreadCount > 0 && (
-            <div className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
+            <div className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-bold text-white shadow-sm">
               {unreadCount}
             </div>
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

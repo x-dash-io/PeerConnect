@@ -50,28 +50,28 @@ export function ConversationList() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-bg-surface">
+    <div className="flex flex-col h-full w-full bg-bg-surface/80 backdrop-blur-xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4">
-        <h2 className="font-display text-lg font-semibold text-text-high">Messages</h2>
+      <div className="flex items-center justify-between px-4 py-4 border-b border-border-subtle">
+        <h2 className="font-display text-lg font-bold text-text-high">Messages</h2>
         <NewConversationButton />
       </div>
 
       {/* Search */}
-      <div className="px-4 pb-3">
+      <div className="px-4 py-3">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-text-low" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-low" />
           <Input
             placeholder="Search conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 bg-bg-deep border-border-main pl-8 text-sm text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25"
+            className="h-9 bg-bg-deep border-border-main pl-9 text-sm text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25 rounded-xl"
           />
         </div>
       </div>
 
       {/* List content */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide">
+      <div className="flex-1 overflow-y-auto scrollbar-hide px-2">
         {isLoading ? (
           <div>
             {Array.from({ length: 5 }, (_, i) => (
@@ -80,7 +80,7 @@ export function ConversationList() {
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center justify-center p-8 text-center mt-10">
-            <div className="size-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+            <div className="size-12 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4">
               <AlertCircle className="size-6 text-destructive" />
             </div>
             <p className="text-sm font-medium text-text-medium mb-1">
@@ -103,7 +103,7 @@ export function ConversationList() {
           </div>
         ) : filteredConversations?.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center mt-10">
-            <div className="size-12 rounded-full bg-bg-muted flex items-center justify-center mb-4">
+            <div className="size-12 rounded-2xl bg-bg-muted flex items-center justify-center mb-4">
               <MessageSquarePlus className="size-6 text-text-low" />
             </div>
             <p className="text-sm font-medium text-text-medium mb-1">No messages yet</p>
@@ -111,7 +111,7 @@ export function ConversationList() {
             <NewConversationButton variant="cta" />
           </div>
         ) : (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-0.5 py-1">
             {filteredConversations?.map((conv: Conversation) => (
               <ConversationListItem
                 key={conv.id}

@@ -29,7 +29,7 @@ export function MessageStatusIcon({ status, variant = "default" }: MessageStatus
     },
     read: {
       Icon: CheckCheck,
-      className: "text-emerald-400",
+      className: "text-presence",
     },
   } as const
 
