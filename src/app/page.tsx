@@ -1,6 +1,6 @@
 "use client"
 
-import { MessageCircle, Shield, Zap, Users, ArrowRight } from "lucide-react"
+import { MessageCircle, Shield, Zap, Users, ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/shared/Logo"
 import { AnimatedBackground, GridOverlay } from "@/components/shared/AnimatedBackground"
@@ -72,7 +72,9 @@ export default function HomePage() {
             </Button>
           </Link>
           <Link href="/register">
-            <Button className="bg-brand text-white hover:bg-brand-hover">Get Started</Button>
+            <Button className="bg-brand text-white hover:bg-brand-hover shadow-lg glow-brand-sm">
+              Get Started
+            </Button>
           </Link>
         </div>
       </nav>
@@ -88,9 +90,9 @@ export default function HomePage() {
           {/* Badge */}
           <motion.div
             variants={itemVariants}
-            className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/[0.08] px-4 py-1.5 text-sm text-brand"
+            className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-subtle px-4 py-1.5 text-sm text-brand font-medium"
           >
-            <span className="inline-block size-1.5 rounded-full bg-presence animate-pulse" />
+            <Sparkles className="size-3.5" />
             Now in early access
           </motion.div>
 
@@ -100,21 +102,20 @@ export default function HomePage() {
               href=""
               imageSize={88}
               showText={false}
-              className="drop-shadow-[0_0_40px_rgba(99,102,241,0.3)]"
+              className="drop-shadow-[0_0_40px_var(--brand-glow)]"
             />
           </motion.div>
 
           <motion.h1
             variants={itemVariants}
-            className="max-w-3xl text-4xl font-extrabold tracking-tight text-text-high md:text-6xl lg:text-7xl leading-[1.1]"
+            className="max-w-3xl text-4xl font-extrabold tracking-tight text-text-high md:text-6xl lg:text-7xl leading-[1.08]"
           >
-            Where professionals{" "}
-            <span className="text-gradient-indigo">connect and collaborate</span>
+            Where professionals <span className="text-gradient-brand">connect and collaborate</span>
           </motion.h1>
 
           <motion.p
             variants={itemVariants}
-            className="mt-6 max-w-xl text-lg text-text-medium md:text-xl"
+            className="mt-6 max-w-xl text-lg text-text-medium md:text-xl leading-relaxed"
           >
             A premium messaging platform built for peers, freelancers, and businesses. Fast,
             private, and beautifully designed.
@@ -125,7 +126,7 @@ export default function HomePage() {
             <Link href="/register">
               <Button
                 size="lg"
-                className="h-12 gap-2 bg-brand px-8 text-white hover:bg-brand-hover active:scale-[0.98] transition-all"
+                className="h-12 gap-2 bg-brand px-8 text-white hover:bg-brand-hover shadow-lg glow-brand-sm active:scale-[0.98] transition-all"
               >
                 Get Started Free
                 <ArrowRight className="size-4" />
@@ -135,7 +136,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-12 border-border-main bg-transparent px-8 text-text-high hover:bg-bg-muted"
+                className="h-12 border-border-main bg-bg-surface/50 backdrop-blur-sm px-8 text-text-high hover:bg-bg-muted"
               >
                 Sign In
               </Button>
@@ -149,14 +150,14 @@ export default function HomePage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.5 }}
-          className="mt-32 grid gap-6 sm:grid-cols-2 lg:mt-40"
+          className="mt-32 grid gap-4 sm:grid-cols-2 lg:mt-40"
         >
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="group rounded-xl border border-border-main bg-bg-surface/50 p-6 transition-all duration-300 hover:border-brand/30 hover:bg-bg-surface hover:-translate-y-1"
+              className="group rounded-2xl border border-border-subtle bg-bg-surface/60 backdrop-blur-sm p-6 transition-all duration-300 hover:border-brand/20 hover:bg-bg-surface hover:-translate-y-1 surface-glow"
             >
-              <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-brand/10 text-brand transition-colors group-hover:bg-brand/15">
+              <div className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-brand-subtle text-brand transition-colors group-hover:bg-brand/15">
                 <feature.icon className="size-5" />
               </div>
               <h3 className="text-lg font-bold text-text-high">{feature.title}</h3>
@@ -180,7 +181,7 @@ export default function HomePage() {
           <Link href="/register" className="mt-8">
             <Button
               size="lg"
-              className="h-12 gap-2 bg-brand px-10 text-white hover:bg-brand-hover active:scale-[0.98] transition-all"
+              className="h-12 gap-2 bg-brand px-10 text-white hover:bg-brand-hover shadow-lg glow-brand-sm active:scale-[0.98] transition-all"
             >
               Create Your Account
               <ArrowRight className="size-4" />

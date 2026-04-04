@@ -10,7 +10,6 @@ import Link from "next/link"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Logo } from "@/components/shared/Logo"
 
 const registerSchema = z
   .object({
@@ -91,7 +90,7 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="rounded-xl border border-border-main bg-bg-surface p-6 sm:p-8">
+      <div className="rounded-2xl border border-border-subtle bg-bg-surface p-6 sm:p-8 surface-glow">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-text-high">Create your account</h2>
           <p className="mt-1 text-sm text-text-medium">Join the professional workspace</p>
@@ -108,7 +107,7 @@ export default function RegisterPage() {
               placeholder="Jane Smith"
               autoComplete="name"
               aria-invalid={!!errors.name}
-              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25"
+              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25 rounded-xl"
               {...register("name")}
             />
             {errors.name && <p className="text-xs text-danger">{errors.name.message}</p>}
@@ -124,7 +123,7 @@ export default function RegisterPage() {
               placeholder="you@example.com"
               autoComplete="email"
               aria-invalid={!!errors.email}
-              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25"
+              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25 rounded-xl"
               {...register("email")}
             />
             {errors.email && <p className="text-xs text-danger">{errors.email.message}</p>}
@@ -140,7 +139,7 @@ export default function RegisterPage() {
               placeholder="••••••••"
               autoComplete="new-password"
               aria-invalid={!!errors.password}
-              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25"
+              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25 rounded-xl"
               {...register("password")}
             />
             {passwordValue.length > 0 && (
@@ -167,7 +166,7 @@ export default function RegisterPage() {
               placeholder="••••••••"
               autoComplete="new-password"
               aria-invalid={!!errors.confirmPassword}
-              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25"
+              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25 rounded-xl"
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
@@ -176,7 +175,7 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">
+            <div className="rounded-xl border border-danger/20 bg-danger/5 px-3 py-2.5 text-sm text-danger">
               {error}
             </div>
           )}
@@ -184,7 +183,7 @@ export default function RegisterPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-10 w-full bg-brand text-white hover:bg-brand-hover active:scale-[0.98] transition-all"
+            className="h-11 w-full bg-brand text-white hover:bg-brand-hover shadow-lg glow-brand-sm active:scale-[0.98] transition-all rounded-xl"
           >
             {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : "Create Account"}
           </Button>

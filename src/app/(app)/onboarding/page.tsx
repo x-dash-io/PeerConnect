@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Users, Briefcase, Zap, CheckCircle, ArrowRight, Loader2 } from "lucide-react"
+import { Users, Briefcase, Zap, CheckCircle, ArrowRight, Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { UserRole } from "@/types"
 
@@ -77,6 +77,12 @@ export default function OnboardingPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-deep p-4">
+      {/* Subtle background glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/3 h-[40%] w-[40%] rounded-full bg-brand/6 blur-[100px]" />
+        <div className="absolute bottom-1/4 right-1/4 h-[30%] w-[30%] rounded-full bg-accent-cyan/4 blur-[80px]" />
+      </div>
+
       <div className="relative w-full max-w-2xl overflow-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           {step === 0 && (
@@ -89,15 +95,19 @@ export default function OnboardingPage() {
               exit="exit"
               className="flex flex-col items-center text-center"
             >
-              <h1 className="text-4xl font-extrabold text-gradient-indigo tracking-tight sm:text-5xl">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand-subtle px-4 py-1.5 text-sm text-brand font-medium">
+                <Sparkles className="size-3.5" />
+                Welcome aboard
+              </div>
+              <h1 className="text-4xl font-extrabold text-gradient-brand tracking-tight sm:text-5xl">
                 Welcome to PeerConnect
               </h1>
-              <p className="mt-4 max-w-md text-lg text-text-medium">
+              <p className="mt-4 max-w-md text-lg text-text-medium leading-relaxed">
                 Professional messaging designed for how you work
               </p>
               <Button
                 onClick={() => goToStep(1)}
-                className="mt-10 h-11 gap-2 bg-brand px-6 text-white hover:bg-brand-hover active:scale-[0.98] transition-all"
+                className="mt-10 h-11 gap-2 bg-brand px-6 text-white hover:bg-brand-hover shadow-lg glow-brand-sm active:scale-[0.98] transition-all"
               >
                 Get Started
                 <ArrowRight className="size-4" />
@@ -128,9 +138,9 @@ export default function OnboardingPage() {
                       key={role.value}
                       type="button"
                       onClick={() => setSelectedRole(role.value)}
-                      className={`relative flex flex-col items-center rounded-xl p-6 text-center transition-all duration-150 cursor-pointer ${
+                      className={`relative flex flex-col items-center rounded-2xl p-6 text-center transition-all duration-200 cursor-pointer ${
                         selected
-                          ? "border-2 border-brand bg-brand-subtle"
+                          ? "border-2 border-brand bg-brand-subtle shadow-sm glow-brand-sm"
                           : "border border-border-main bg-bg-surface hover:bg-bg-muted"
                       }`}
                     >
@@ -154,7 +164,7 @@ export default function OnboardingPage() {
               <Button
                 onClick={handleFinish}
                 disabled={!selectedRole || saving}
-                className="mt-8 h-11 gap-2 bg-brand px-6 text-white hover:bg-brand-hover active:scale-[0.98] transition-all disabled:opacity-40"
+                className="mt-8 h-11 gap-2 bg-brand px-6 text-white hover:bg-brand-hover shadow-lg glow-brand-sm active:scale-[0.98] transition-all disabled:opacity-40"
               >
                 {saving ? (
                   <Loader2 className="size-4 animate-spin" />
