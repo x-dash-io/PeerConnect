@@ -6,10 +6,14 @@ import { generateId } from "@/lib/id"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { NextRequest, NextResponse } from "next/server"
+import { csrfGuard } from "@/lib/csrf"
 
 const MAX_SIMPLE_SIZE = 20 * 1024 * 1024 // 20MB max for single PUT
 
 export async function POST(req: NextRequest) {
+  const guard = csrfGuard(req)
+  if (guard) return guard
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

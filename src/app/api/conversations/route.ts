@@ -2,36 +2,59 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { conversations, conversationParticipants, messages, users } from "@/lib/schema"
 import { eq, and, ne, gt, desc, sql } from "drizzle-orm"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { csrfGuard } from "@/lib/csrf"
 
-export async function GET() {
+const CONVERSATIONS_PAGE_SIZE = 50
+
+export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const currentUserId = session.user.id
 
-  // Get all conversations where user is a participant, ordered by latest activity
+  const { searchParams } = req.nextUrl
+  const cursor = searchParams.get("cursor")
+  const limit = Math.min(
+    parseInt(searchParams.get("limit") || String(CONVERSATIONS_PAGE_SIZE), 10),
+    100,
+  )
+
+  // Get conversations where user is a participant, ordered by latest activity
+  const conditions = [eq(conversationParticipants.userId, currentUserId)]
+  if (cursor) {
+    conditions.push(
+      sql`COALESCE((SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = conversations.id), conversations.created_at) < ${cursor}::timestamptz`,
+    )
+  }
+
   const userConversations = await db
     .select({
       id: conversations.id,
       type: conversations.type,
       createdAt: conversations.createdAt,
       lastReadAt: conversationParticipants.lastReadAt,
+      lastActivity: sql<string>`COALESCE((SELECT MAX(m.created_at)::text FROM messages m WHERE m.conversation_id = conversations.id), conversations.created_at::text)`,
     })
     .from(conversations)
     .innerJoin(
       conversationParticipants,
       eq(conversations.id, conversationParticipants.conversationId),
     )
-    .where(eq(conversationParticipants.userId, currentUserId))
+    .where(and(...conditions))
     .orderBy(
       desc(
         sql`COALESCE((SELECT MAX(m.created_at) FROM messages m WHERE m.conversation_id = conversations.id), conversations.created_at)`,
       ),
     )
+    .limit(limit + 1)
+
+  const hasMore = userConversations.length > limit
+  const page = hasMore ? userConversations.slice(0, limit) : userConversations
+  const nextCursor = hasMore ? page[page.length - 1].lastActivity : null
 
   // For each conversation, get participants and last message
   const enriched = await Promise.all(
-    userConversations.map(async (conv) => {
+    page.map(async (conv) => {
       const participants = await db
         .select({
           id: users.id,
@@ -69,10 +92,13 @@ export async function GET() {
     }),
   )
 
-  return NextResponse.json(enriched)
+  return NextResponse.json({ conversations: enriched, nextCursor })
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const guard = csrfGuard(req)
+  if (guard) return guard
+
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 

@@ -4,10 +4,14 @@ import { db } from "@/lib/db"
 import { files } from "@/lib/schema"
 import { generateId } from "@/lib/id"
 import { NextRequest, NextResponse } from "next/server"
+import { csrfGuard } from "@/lib/csrf"
 
 const MAX_SIZE = 200 * 1024 * 1024 // 200MB
 
 export async function POST(req: NextRequest) {
+  const guard = csrfGuard(req)
+  if (guard) return guard
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

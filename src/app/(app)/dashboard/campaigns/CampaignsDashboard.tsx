@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
+import { CreateCampaignModal } from "@/components/campaigns/CreateCampaignModal"
 
 interface Campaign {
   id: string
@@ -103,6 +104,7 @@ function CampaignCard({ campaign }: { campaign: Campaign }) {
 
 export function CampaignsDashboard({ initialCampaigns }: { initialCampaigns: Campaign[] }) {
   const [filter, setFilter] = useState<Campaign["status"] | "ALL">("ALL")
+  const [modalOpen, setModalOpen] = useState(false)
 
   const filtered =
     filter === "ALL" ? initialCampaigns : initialCampaigns.filter((c) => c.status === filter)
@@ -122,11 +124,16 @@ export function CampaignsDashboard({ initialCampaigns }: { initialCampaigns: Cam
           <h1 className="font-display text-2xl font-bold text-text-high">Campaigns</h1>
           <p className="mt-1 text-sm text-text-medium">Send bulk messages to multiple recipients</p>
         </div>
-        <Button className="gap-2 bg-brand text-white hover:bg-brand-hover">
+        <Button
+          onClick={() => setModalOpen(true)}
+          className="gap-2 bg-brand text-white hover:bg-brand-hover"
+        >
           <Plus className="size-4" />
           <span className="hidden sm:inline">New Campaign</span>
         </Button>
       </div>
+
+      <CreateCampaignModal open={modalOpen} onClose={() => setModalOpen(false)} />
 
       {/* Stats */}
       {initialCampaigns.length > 0 && (
@@ -189,7 +196,10 @@ export function CampaignsDashboard({ initialCampaigns }: { initialCampaigns: Cam
             Create a campaign to send messages to multiple recipients at once. Great for
             announcements and outreach.
           </p>
-          <Button className="gap-2 bg-brand text-white hover:bg-brand-hover">
+          <Button
+            onClick={() => setModalOpen(true)}
+            className="gap-2 bg-brand text-white hover:bg-brand-hover"
+          >
             <Plus className="size-4" />
             Create Your First Campaign
           </Button>

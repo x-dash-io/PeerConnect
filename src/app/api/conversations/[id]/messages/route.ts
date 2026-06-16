@@ -1,11 +1,13 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { messages, conversationParticipants, users, files } from "@/lib/schema"
-import { eq, and, desc, lt } from "drizzle-orm"
+import { messages, messageReactions, conversationParticipants, users, files } from "@/lib/schema"
+import { eq, and, desc, lt, inArray } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { NextRequest, NextResponse } from "next/server"
 import { MESSAGE_PAGE_SIZE } from "@/lib/constants"
 import { generateId } from "@/lib/id"
+import { csrfGuard } from "@/lib/csrf"
+import { sanitizeMessage } from "@/lib/sanitize"
 import type { Server } from "socket.io"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -59,6 +61,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       status: messages.status,
       replyToId: messages.replyToId,
       metadata: messages.metadata,
+      editedAt: messages.editedAt,
+      isDeleted: messages.isDeleted,
       createdAt: messages.createdAt,
       updatedAt: messages.updatedAt,
       senderName: users.name,
@@ -105,24 +109,58 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         }
       : null,
     metadata: row.metadata,
+    editedAt: row.editedAt,
+    isDeleted: row.isDeleted,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     senderName: row.senderName,
     senderImage: row.senderImage,
   }))
 
-  return NextResponse.json({ messages: formatted, nextCursor })
+  // Fetch reactions for all messages in this page
+  const messageIds = formatted.map((m) => m.id)
+  let reactionsMap: Record<
+    string,
+    { id: string; messageId: string; userId: string; emoji: string; createdAt: Date }[]
+  > = {}
+  if (messageIds.length > 0) {
+    const reactionRows = await db
+      .select()
+      .from(messageReactions)
+      .where(inArray(messageReactions.messageId, messageIds))
+
+    reactionsMap = Object.fromEntries(
+      messageIds.map((id) => [id, reactionRows.filter((r) => r.messageId === id)]),
+    )
+  }
+
+  const withReactions = formatted.map((msg) => ({
+    ...msg,
+    reactions: (reactionsMap[msg.id] || []).map((r) => ({
+      id: r.id,
+      messageId: r.messageId,
+      userId: r.userId,
+      emoji: r.emoji,
+      createdAt: r.createdAt,
+    })),
+  }))
+
+  return NextResponse.json({ messages: withReactions, nextCursor })
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = csrfGuard(req)
+  if (guard) return guard
+
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id: conversationId } = await params
   const body = await req.json()
-  const { content, type = "TEXT", replyToId, fileId } = body
+  const content = body.content ? sanitizeMessage(body.content) : ""
+  const { type = "TEXT", replyToId, fileId } = body
 
-  if (!content?.trim() && !fileId) {
+  if (!content.trim() && !fileId) {
     return NextResponse.json({ error: "Content or file required" }, { status: 400 })
   }
 

@@ -19,6 +19,14 @@ export interface ReplyPreview {
   senderName: string | null
 }
 
+export interface MessageReaction {
+  id: string
+  messageId: string
+  userId: string
+  emoji: string
+  createdAt: string
+}
+
 export interface Message {
   id: string
   conversationId: string
@@ -33,6 +41,9 @@ export interface Message {
   replyTo?: ReplyPreview | null
   file?: FileAttachment
   metadata?: Record<string, unknown> | null
+  editedAt?: string | null
+  isDeleted?: string
+  reactions?: MessageReaction[]
   createdAt: string
 }
 
@@ -60,6 +71,10 @@ export interface SocketEvents {
   "conversation:leave": (conversationId: string) => void
   "message:send": (data: { conversationId: string; content: string; type: MessageType }) => void
   "message:received": (message: Message) => void
+  "message:edited": (data: { conversationId: string; message: Message }) => void
+  "message:deleted": (data: { conversationId: string; messageId: string }) => void
+  "message:reaction:added": (data: { conversationId: string; reaction: MessageReaction }) => void
+  "message:reaction:removed": (data: { conversationId: string; reactionId: string }) => void
   "message:status": (data: { messageId: string; status: MessageStatus }) => void
   "typing:start": (data: { conversationId: string; userId: string }) => void
   "typing:stop": (data: { conversationId: string; userId: string }) => void

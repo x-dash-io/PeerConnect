@@ -21,8 +21,9 @@ const features = [
   },
   {
     icon: Shield,
-    title: "End-to-End Privacy",
-    description: "Your conversations stay yours. Enterprise-grade security by default.",
+    title: "Privacy First",
+    description:
+      "Your data is encrypted in transit and at rest. Enterprise-grade security by default.",
   },
   {
     icon: Zap,

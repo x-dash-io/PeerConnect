@@ -2,17 +2,25 @@ import { loadEnvConfig } from "@next/env"
 const projectDir = process.cwd()
 loadEnvConfig(projectDir)
 
+// HTTPS should be terminated at the reverse proxy (nginx, Cloudflare, etc.).
+// If running without a proxy, use a self-signed cert or Let's Encrypt via:
+//   const https = require("https") + fs.readFileSync("cert.pem")
+// and replace createServer(httpServer) with createServer(httpsOptions, expressApp).
+
 import express from "express"
+import helmet from "helmet"
 import { createServer } from "http"
 import { Server } from "socket.io"
 import next from "next"
 import { createClient } from "redis"
 import { createAdapter } from "@socket.io/redis-adapter"
-import { db } from "@/lib/db"
+import { db, closeDb } from "@/lib/db"
 import { messages, conversationParticipants } from "@/lib/schema"
 import { eq, and, ne } from "drizzle-orm"
 import type { MessageStatus } from "@/types"
 import { setUserOnline, setUserOffline } from "@/lib/redis"
+import { startCampaignWorker, stopCampaignWorker } from "@/workers/campaign-worker"
+import { closeCampaignQueue } from "@/lib/campaign-queue"
 
 const dev = process.env.NODE_ENV !== "production"
 const hostname = "localhost"
@@ -210,13 +218,45 @@ app.prepare().then(async () => {
     })
   })
 
-  // Next.js request handling
-  expressApp.all("/{*path}", (req, res) => {
-    return handle(req, res)
+  // Security headers
+  expressApp.use(
+    helmet({
+      contentSecurityPolicy: false, // Next.js handles its own CSP via metadata
+      crossOriginEmbedderPolicy: false,
+    }),
+  )
+
+  // Health check
+  expressApp.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", uptime: process.uptime(), timestamp: new Date().toISOString() })
   })
+
+  // Next.js request handling — catch all unmatched routes
+  expressApp.use((req, res) => handle(req, res))
 
   httpServer.listen(port, () => {
     console.log(`[Server] Ready on http://${hostname}:${port}`)
     console.log(`[Server] Environment: ${dev ? "development" : "production"}`)
   })
+
+  // Start campaign delivery worker if Redis is available
+  if (redisUrl) {
+    startCampaignWorker(redisUrl)
+  }
+
+  // Graceful shutdown
+  const shutdown = async (signal: string) => {
+    console.log(`\n[Server] ${signal} received — shutting down...`)
+    httpServer.close(() => {
+      console.log("[Server] HTTP server closed")
+    })
+    io.close()
+    await stopCampaignWorker()
+    await closeCampaignQueue()
+    await closeDb()
+    process.exit(0)
+  }
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"))
+  process.on("SIGINT", () => shutdown("SIGINT"))
 })

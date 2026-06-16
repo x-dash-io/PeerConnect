@@ -60,12 +60,12 @@ export function ConversationList() {
       {/* Search */}
       <div className="px-4 py-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-low" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
           <Input
             placeholder="Search conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 bg-bg-deep border-border-main pl-9 text-sm text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25 rounded-xl"
+            className="h-9 bg-neutral-100 dark:bg-neutral-800 border-0 pl-9 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-600 rounded-xl"
           />
         </div>
       </div>

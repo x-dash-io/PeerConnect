@@ -4,7 +4,10 @@ import { NextResponse } from "next/server"
 const authProxy = auth((req) => {
   const isAuth = !!req.auth
   const isAuthPage =
-    req.nextUrl.pathname.startsWith("/login") || req.nextUrl.pathname.startsWith("/register")
+    req.nextUrl.pathname.startsWith("/login") ||
+    req.nextUrl.pathname.startsWith("/register") ||
+    req.nextUrl.pathname.startsWith("/forgot-password") ||
+    req.nextUrl.pathname.startsWith("/reset-password")
 
   if (isAuthPage) {
     if (isAuth) return NextResponse.redirect(new URL("/dashboard", req.url))
@@ -22,5 +25,5 @@ const authProxy = auth((req) => {
 export { authProxy as proxy }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/login", "/register", "/forgot-password", "/reset-password"],
 }

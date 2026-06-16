@@ -9,6 +9,7 @@ export interface RichTextInputHandle {
   insertEmoji: (emoji: TelegramEmoji) => void
   focus: () => void
   clear: () => void
+  setValue: (text: string) => void
 }
 
 interface RichTextInputProps {
@@ -86,6 +87,13 @@ export const RichTextInput = forwardRef<RichTextInputHandle, RichTextInputProps>
         if (!el) return
         el.innerHTML = ""
         onChange("")
+        adjustHeight()
+      },
+      setValue(text: string) {
+        const el = divRef.current
+        if (!el) return
+        el.textContent = text
+        onChange(text)
         adjustHeight()
       },
       insertEmoji(emoji: TelegramEmoji) {

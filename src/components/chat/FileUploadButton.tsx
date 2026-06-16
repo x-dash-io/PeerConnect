@@ -42,16 +42,14 @@ export function FileUploadButton({ onFileSelect, disabled }: FileUploadButtonPro
         className="hidden"
         accept="*/*"
       />
-      <Button
+      <button
         type="button"
-        variant="ghost"
-        size="icon"
         disabled={disabled}
         onClick={handleButtonClick}
-        className="mb-0.5 text-text-low hover:text-text-medium shrink-0 active:scale-95 transition-all"
+        className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors shrink-0 flex items-center justify-center size-9"
       >
         <Paperclip className="size-5" />
-      </Button>
+      </button>
     </>
   )
 }

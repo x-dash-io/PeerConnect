@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { Send, Smile, Loader2, X, Reply, Eye, EyeOff } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Send, Smile, Loader2, X, Reply, Eye, EyeOff, Sparkles } from "lucide-react"
 import { useSendMessage } from "@/hooks/useMessages"
 import { useSocket } from "@/providers/SocketProvider"
 import {
@@ -42,6 +41,7 @@ export function MessageComposer({
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [currentFile, setCurrentFile] = useState<File | null>(null)
+  const [isPolishing, setIsPolishing] = useState(false)
 
   const richInputRef = useRef<RichTextInputHandle>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -162,12 +162,40 @@ export function MessageComposer({
     setIsEmojiOpen(false)
   }, [])
 
+  const handlePolish = useCallback(async () => {
+    const trimmed = content.trim()
+    if (!trimmed || isPolishing) return
+
+    setIsPolishing(true)
+    try {
+      const res = await fetch("/api/ai/polish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: trimmed }),
+      })
+
+      if (!res.ok) {
+        const { error } = await res.json()
+        toast.error(error || "Failed to polish message")
+        return
+      }
+
+      const { polished } = await res.json()
+      setContent(polished)
+      richInputRef.current?.setValue(polished)
+    } catch {
+      toast.error("Failed to polish message")
+    } finally {
+      setIsPolishing(false)
+    }
+  }, [content, isPolishing])
+
   useEffect(() => {
     if (replyTo) richInputRef.current?.focus()
   }, [replyTo])
 
   return (
-    <div className="shrink-0 border-t border-border-subtle glass-heavy">
+    <div className="shrink-0 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3">
       {/* Upload progress */}
       <AnimatePresence>
         {isUploading && currentFile && (
@@ -190,17 +218,17 @@ export function MessageComposer({
             transition={{ duration: 0.15 }}
             className="overflow-hidden"
           >
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle bg-brand-subtle/30">
-              <Reply className="size-4 text-brand shrink-0" />
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-neutral-200 dark:border-neutral-700 bg-indigo-50/50 dark:bg-indigo-950/30 mb-2">
+              <Reply className="size-4 text-indigo-500 shrink-0" />
               <div className="flex-1 min-w-0">
-                <span className="text-xs font-semibold text-brand">{replyTo.senderName}</span>
-                <p className="text-xs text-text-medium truncate">
+                <span className="text-xs font-medium text-indigo-500">{replyTo.senderName}</span>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                   {replyTo.content || "Attachment"}
                 </p>
               </div>
               <button
                 onClick={onCancelReply}
-                className="size-6 rounded-full flex items-center justify-center text-text-low hover:text-text-high hover:bg-bg-muted transition-colors"
+                className="size-6 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               >
                 <X className="size-3.5" />
               </button>
@@ -209,69 +237,84 @@ export function MessageComposer({
         )}
       </AnimatePresence>
 
-      <div className="flex items-end gap-2 p-3 md:p-4">
-        <FileUploadButton onFileSelect={handleFileSelect} disabled={isUploading || isPending} />
+      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-300 dark:focus-within:border-indigo-500 transition-all">
+        <div className="flex items-end gap-2 px-4 py-3">
+          <FileUploadButton onFileSelect={handleFileSelect} disabled={isUploading || isPending} />
 
-        <div className="relative flex-1">
-          {isPreview && content.trim() ? (
-            <div
-              className="w-full bg-bg-deep rounded-xl px-4 py-2.5 text-sm text-text-high border border-brand/40 overflow-y-auto scrollbar-hide leading-relaxed pr-[4.5rem]"
-              style={{ minHeight: 44, maxHeight: 120 }}
-            >
-              <MarkdownRenderer content={content} />
-            </div>
-          ) : (
-            <RichTextInput
-              ref={richInputRef}
-              onChange={handleRichInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Write a message..."
-              className="pr-[4.5rem]"
-            />
-          )}
-          <div className="absolute right-1.5 bottom-0 flex items-center" style={{ height: 44 }}>
-            {content.trim() && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => setIsPreview((prev) => !prev)}
-                className="text-text-low hover:text-text-medium rounded-lg"
-                title="Toggle preview (Cmd+Shift+P)"
+          <div className="relative flex-1">
+            {isPreview && content.trim() ? (
+              <div
+                className="w-full rounded-xl px-3 py-2.5 text-sm text-neutral-900 dark:text-neutral-100 border border-indigo-300 overflow-y-auto scrollbar-hide leading-relaxed pr-10"
+                style={{ minHeight: 44, maxHeight: 120 }}
               >
-                {isPreview ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </Button>
-            )}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => setIsEmojiOpen((prev) => !prev)}
-                className="text-text-low hover:text-text-medium rounded-lg"
-              >
-                <Smile className="size-4" />
-              </Button>
-              <EmojiPicker
-                key={String(isEmojiOpen)}
-                open={isEmojiOpen}
-                onClose={() => setIsEmojiOpen(false)}
-                onSelect={handleEmojiSelect}
+                <MarkdownRenderer content={content} />
+              </div>
+            ) : (
+              <RichTextInput
+                ref={richInputRef}
+                onChange={handleRichInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Write a message..."
+                className="border-0 bg-transparent focus:ring-0 px-3 py-2.5 pr-10"
               />
+            )}
+            <div className="absolute right-1 bottom-0 flex items-center" style={{ height: 44 }}>
+              {content.trim() && !isPolishing && (
+                <button
+                  onClick={handlePolish}
+                  className="size-7 flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                  title="Polish with AI"
+                >
+                  <Sparkles className="size-4" />
+                </button>
+              )}
+              {isPolishing && (
+                <div className="size-7 flex items-center justify-center">
+                  <Loader2 className="size-3.5 animate-spin text-indigo-500" />
+                </div>
+              )}
+              {content.trim() && (
+                <button
+                  onClick={() => setIsPreview((prev) => !prev)}
+                  className="size-7 flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                  title="Toggle preview (Cmd+Shift+P)"
+                >
+                  {isPreview ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              )}
+              <div className="relative">
+                <button
+                  onClick={() => setIsEmojiOpen((prev) => !prev)}
+                  className="size-7 flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                >
+                  <Smile className="size-5" />
+                </button>
+                <EmojiPicker
+                  key={String(isEmojiOpen)}
+                  open={isEmojiOpen}
+                  onClose={() => setIsEmojiOpen(false)}
+                  onSelect={handleEmojiSelect}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {content.trim() ? (
-          <Button
-            onClick={handleSend}
-            disabled={isPending}
-            size="icon"
-            className="mb-0.5 bg-brand hover:bg-brand-hover text-white rounded-xl shadow-lg glow-brand-sm transition-all active:scale-95 shrink-0"
-          >
-            {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-          </Button>
-        ) : (
-          <AudioRecordButton onSend={handleAudioSend} disabled={isUploading || isPending} />
-        )}
+          {content.trim() ? (
+            <button
+              onClick={handleSend}
+              disabled={isPending}
+              className="rounded-full p-2.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shrink-0 flex items-center justify-center"
+            >
+              {isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
+            </button>
+          ) : (
+            <AudioRecordButton onSend={handleAudioSend} disabled={isUploading || isPending} />
+          )}
+        </div>
       </div>
     </div>
   )

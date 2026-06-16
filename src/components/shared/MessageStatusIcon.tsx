@@ -17,19 +17,19 @@ export function MessageStatusIcon({ status, variant = "default" }: MessageStatus
   const config = {
     sending: {
       Icon: Loader2,
-      className: cn("animate-spin", isLight ? "text-white/50" : "text-text-low"),
+      className: cn("animate-spin", isLight ? "text-white/50" : "text-neutral-400"),
     },
     sent: {
       Icon: Check,
-      className: isLight ? "text-white/70" : "text-text-medium",
+      className: isLight ? "text-white/60" : "text-neutral-400",
     },
     delivered: {
       Icon: CheckCheck,
-      className: isLight ? "text-white/70" : "text-text-medium",
+      className: isLight ? "text-white/70" : "text-neutral-400",
     },
     read: {
       Icon: CheckCheck,
-      className: "text-presence",
+      className: isLight ? "text-white" : "text-indigo-500",
     },
   } as const
 
@@ -45,7 +45,7 @@ export function MessageStatusIcon({ status, variant = "default" }: MessageStatus
         transition={{ duration: 0.15 }}
         className="inline-flex items-center"
       >
-        <Icon size={14} strokeWidth={2.5} className={className} />
+        <Icon size={12} strokeWidth={2.5} className={className} />
       </motion.span>
     </AnimatePresence>
   )

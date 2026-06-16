@@ -98,8 +98,7 @@ export function AudioRecordButton({ onSend, disabled }: AudioRecordButtonProps) 
         onClick={handleStart}
         disabled={disabled}
         className={cn(
-          "mb-0.5 size-9 rounded-xl flex items-center justify-center shrink-0",
-          "text-text-low hover:text-text-medium hover:bg-bg-muted transition-all active:scale-95",
+          "text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors shrink-0 flex items-center justify-center size-9",
           disabled && "opacity-40 cursor-not-allowed",
         )}
       >

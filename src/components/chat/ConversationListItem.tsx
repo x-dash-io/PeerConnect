@@ -2,9 +2,9 @@
 
 import { useSession } from "next-auth/react"
 import { formatDistanceToNow } from "date-fns"
-import { cn } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import { Conversation } from "@/types"
-import { AvatarWithPresence } from "@/components/shared/AvatarWithPresence"
+import { PresenceDot } from "@/components/shared/PresenceDot"
 import { usePresence } from "@/hooks/usePresence"
 
 interface ConversationListItemProps {
@@ -40,36 +40,27 @@ export function ConversationListItem({
     <div
       onClick={onClick}
       className={cn(
-        "group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200",
-        isActive ? "bg-brand-subtle shadow-sm" : "hover:bg-bg-muted/70",
+        "group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition-colors",
+        isActive
+          ? "bg-indigo-50 dark:bg-indigo-950/30 border-l-2 border-indigo-500"
+          : "hover:bg-neutral-100 dark:hover:bg-neutral-800/50",
       )}
     >
-      {/* Active indicator */}
-      {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-[3px] rounded-r-full bg-brand" />
-      )}
-
-      {/* Avatar */}
-      <AvatarWithPresence
-        name={otherParticipant?.name || "User"}
-        src={otherParticipant?.image || undefined}
-        status={presenceStatus}
-        size="md"
-        className="shrink-0"
-      />
+      {/* Avatar with presence */}
+      <div className="relative shrink-0">
+        <div className="flex size-10 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-sm font-medium text-indigo-700 dark:text-indigo-300">
+          {getInitials(otherParticipant?.name || "U")}
+        </div>
+        <PresenceDot status={presenceStatus} />
+      </div>
 
       {/* Info */}
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <div className="flex items-center justify-between gap-2">
-          <span
-            className={cn(
-              "truncate text-sm font-semibold",
-              unreadCount > 0 ? "text-text-high" : "text-text-high",
-            )}
-          >
+          <span className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
             {otherParticipant?.name || otherParticipant?.email}
           </span>
-          <span className="shrink-0 text-[11px] text-text-low tabular-nums">
+          <span className="shrink-0 text-[10px] text-neutral-400 tabular-nums ml-auto">
             {lastMessage
               ? formatTimestamp(lastMessage.createdAt)
               : formatTimestamp(conversation.createdAt)}
@@ -77,17 +68,12 @@ export function ConversationListItem({
         </div>
 
         <div className="flex items-center justify-between gap-2 mt-0.5">
-          <p
-            className={cn(
-              "truncate text-[13px]",
-              unreadCount > 0 ? "text-text-high font-medium" : "text-text-medium",
-            )}
-          >
+          <p className="truncate text-xs text-neutral-400 max-w-[140px]">
             {lastMessage?.content || "No messages yet"}
           </p>
 
           {unreadCount > 0 && (
-            <div className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-bold text-white shadow-sm">
+            <div className="flex shrink-0 min-w-[18px] items-center justify-center rounded-full bg-indigo-500 px-1.5 py-0.5 text-[10px] font-medium text-white">
               {unreadCount}
             </div>
           )}

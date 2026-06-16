@@ -45,12 +45,51 @@ const roles = [
 export function SettingsForm({ user }: { user: SettingsUser }) {
   const [name, setName] = useState(user.name ?? "")
   const [bio, setBio] = useState(user.bio ?? "")
+  const [avatarUrl, setAvatarUrl] = useState(user.image ?? "")
   const [savingProfile, setSavingProfile] = useState(false)
+  const [savingAvatar, setSavingAvatar] = useState(false)
   const [selectedRole, setSelectedRole] = useState<UserRole>(user.role)
   const [savingRole, setSavingRole] = useState(false)
 
-  const profileDirty = name !== (user.name ?? "") || bio !== (user.bio ?? "")
+  const profileDirty =
+    name !== (user.name ?? "") || bio !== (user.bio ?? "") || avatarUrl !== (user.image ?? "")
   const roleDirty = selectedRole !== user.role
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setSavingAvatar(true)
+    try {
+      // Get signed URL
+      const { url, key } = await fetch("/api/users/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType: file.type, sizeBytes: file.size }),
+      }).then((r) => r.json())
+
+      // Upload to S3
+      const uploadRes = await fetch(url, { method: "PUT", body: file })
+      if (!uploadRes.ok) throw new Error("Upload failed")
+
+      const bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "peerconnect-uploads"
+      const imageUrl = `https://${bucket}.s3.amazonaws.com/${key}`
+      setAvatarUrl(imageUrl)
+
+      // Save to profile
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imageUrl }),
+      })
+      if (!res.ok) throw new Error("Failed to save avatar")
+      toast.success("Avatar updated")
+    } catch {
+      toast.error("Failed to upload avatar")
+    } finally {
+      setSavingAvatar(false)
+    }
+  }
 
   async function saveProfile() {
     if (!name.trim()) {
@@ -59,10 +98,13 @@ export function SettingsForm({ user }: { user: SettingsUser }) {
     }
     setSavingProfile(true)
     try {
+      const updates: Record<string, unknown> = { name: name.trim() }
+      if (bio.trim()) updates.bio = bio.trim()
+      if (avatarUrl) updates.image = avatarUrl
       const res = await fetch("/api/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), bio: bio.trim() || null }),
+        body: JSON.stringify(updates),
       })
       if (!res.ok) throw new Error("Failed to save")
       toast.success("Profile updated")
@@ -108,14 +150,25 @@ export function SettingsForm({ user }: { user: SettingsUser }) {
 
         <div className="mt-6 flex items-center gap-4">
           <div className="relative">
-            <UserAvatar name={user.name ?? "User"} src={user.image ?? undefined} size="lg" />
-            <button
-              type="button"
-              className="absolute -bottom-1 -right-1 flex size-7 items-center justify-center rounded-full border-2 border-bg-surface bg-bg-muted text-text-medium transition-colors hover:bg-bg-elevated hover:text-text-high"
-              onClick={() => toast.info("Avatar upload coming soon")}
-            >
-              <Camera className="size-3.5" />
-            </button>
+            <UserAvatar
+              name={user.name ?? "User"}
+              src={(avatarUrl || user.image) ?? undefined}
+              size="lg"
+            />
+            <label className="absolute -bottom-1 -right-1 flex size-7 cursor-pointer items-center justify-center rounded-full border-2 border-bg-surface bg-bg-muted text-text-medium transition-colors hover:bg-bg-elevated hover:text-text-high">
+              {savingAvatar ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Camera className="size-3.5" />
+              )}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarUpload}
+                disabled={savingAvatar}
+              />
+            </label>
           </div>
           <div className="min-w-0">
             <p className="truncate font-medium text-text-high">{user.name ?? "User"}</p>

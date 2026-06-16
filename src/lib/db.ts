@@ -33,3 +33,7 @@ export const db = global.__db || drizzle(pool, { schema })
 if (process.env.NODE_ENV !== "production") {
   global.__db = db
 }
+
+export async function closeDb(): Promise<void> {
+  await pool.end()
+}

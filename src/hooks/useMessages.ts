@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Message } from "@/types"
+import { Message, MessageType } from "@/types"
 import { MESSAGE_PAGE_SIZE } from "@/lib/constants"
 import { toast } from "sonner"
 
@@ -109,6 +109,47 @@ export function useSendMessage(conversationId: string) {
         qc.setQueryData(["messages", conversationId], context.previous)
       }
       toast.error("Failed to send message. Please try again.")
+    },
+  })
+}
+
+export function useEditMessage(conversationId: string) {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const res = await fetch(`/api/conversations/${conversationId}/messages/${messageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      })
+      if (!res.ok) throw new Error("Failed to edit message")
+      return res.json() as Promise<Message>
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["messages", conversationId] })
+    },
+    onError: () => {
+      toast.error("Failed to edit message")
+    },
+  })
+}
+
+export function useDeleteMessage(conversationId: string) {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const res = await fetch(`/api/conversations/${conversationId}/messages/${messageId}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("Failed to delete message")
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["messages", conversationId] })
+    },
+    onError: () => {
+      toast.error("Failed to delete message")
     },
   })
 }

@@ -4,9 +4,10 @@ export function useConversations() {
   return useQuery({
     queryKey: ["conversations"],
     queryFn: async () => {
-      const res = await fetch("/api/conversations")
+      const res = await fetch("/api/conversations?limit=50")
       if (!res.ok) throw new Error("Failed to fetch conversations")
-      return res.json()
+      const data = await res.json()
+      return data.conversations || data
     },
     // Re-fetch every 30s so relative timestamps ("2 min ago") stay fresh
     // and read/unread counts update even if socket events are missed

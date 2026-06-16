@@ -5,10 +5,14 @@ import { messages } from "@/lib/schema"
 import { eq } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
+import { csrfGuard } from "@/lib/csrf"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function POST(req: NextRequest) {
+  const guard = csrfGuard(req)
+  if (guard) return guard
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -38,20 +42,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Stream the audio file from S3 via a 5-minute signed URL
-    const signedUrl = await getDownloadUrl(s3Key, 300)
-    const audioResponse = await fetch(signedUrl)
+    // Pass the S3 signed URL directly to OpenAI Whisper
+    // to avoid double bandwidth through the server
+    const signedUrl = await getDownloadUrl(s3Key, 600) // 10 min for Whisper processing
 
-    if (!audioResponse.ok) {
-      return NextResponse.json({ error: "Failed to fetch audio from S3" }, { status: 502 })
-    }
-
-    const audioBuffer = await audioResponse.arrayBuffer()
-    const audioFile = new File([audioBuffer], "audio.webm", { type: "audio/webm" })
-
-    // Transcribe with Whisper
     const result = await openai.audio.transcriptions.create({
-      file: audioFile,
+      file: await fetch(signedUrl).then((r) => r.blob()),
       model: "whisper-1",
     })
 

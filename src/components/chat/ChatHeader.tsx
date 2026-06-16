@@ -3,8 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Phone, MoreHorizontal, Video, Info, Images } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { AvatarWithPresence } from "@/components/shared/AvatarWithPresence"
+import { cn, getInitials } from "@/lib/utils"
 import { RoleBadge } from "@/components/shared/RoleBadge"
 import { MediaGallery } from "@/components/chat/MediaGallery"
 import { UserProfile } from "@/types"
@@ -31,64 +30,68 @@ export function ChatHeader({ conversationId, participants, currentUserId }: Chat
 
   if (!recipient) return null
 
-  const presenceText = (() => {
-    if (presence === "online") return <span className="text-presence font-medium">Active now</span>
-    if (presence === "away") return <span className="text-warn">Away</span>
-    if (lastSeen) {
-      return `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`
-    }
-    return "Offline"
-  })()
+  const isOnline = presence === "online"
 
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-subtle glass-heavy px-4">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-4">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="flex md:hidden items-center justify-center size-9 rounded-xl text-text-medium hover:text-text-high hover:bg-bg-muted transition-colors"
+            className="flex md:hidden items-center justify-center size-9 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <ArrowLeft className="size-5" />
           </Link>
-          <AvatarWithPresence
-            src={recipient.image || undefined}
-            name={recipient.name || "User"}
-            status={presence}
-            size="md"
-          />
+          <div className="relative shrink-0">
+            <div className="flex size-10 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-sm font-medium text-indigo-700 dark:text-indigo-300">
+              {getInitials(recipient.name || "U")}
+            </div>
+            <span
+              className={cn(
+                "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white dark:border-neutral-900",
+                isOnline ? "bg-emerald-400" : "bg-neutral-300 dark:bg-neutral-600",
+              )}
+            />
+          </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-text-high leading-none">{recipient.name}</span>
+              <span className="font-medium text-neutral-900 dark:text-neutral-100 leading-none">
+                {recipient.name}
+              </span>
               <RoleBadge role={recipient.role} />
             </div>
-            <span className="text-[11px] text-text-medium mt-0.5">{presenceText}</span>
+            <span className="flex items-center gap-1 mt-0.5">
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  isOnline ? "bg-emerald-400" : "bg-neutral-300 dark:bg-neutral-600",
+                )}
+              />
+              <span className="text-xs text-neutral-400">
+                {isOnline
+                  ? "Online"
+                  : presence === "away"
+                    ? "Away"
+                    : lastSeen
+                      ? `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`
+                      : "Offline"}
+              </span>
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden md:flex text-text-low hover:text-text-high hover:bg-bg-muted rounded-xl"
-          >
+          <button className="hidden md:flex items-center justify-center size-9 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all">
             <Phone className="size-[18px]" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden md:flex text-text-low hover:text-text-high hover:bg-bg-muted rounded-xl"
-          >
+          </button>
+          <button className="hidden md:flex items-center justify-center size-9 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all">
             <Video className="size-[18px]" />
-          </Button>
+          </button>
 
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-text-low hover:text-text-high hover:bg-bg-muted rounded-xl"
-                />
+                <button className="flex items-center justify-center size-9 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all" />
               }
             >
               <MoreHorizontal className="size-[18px]" />

@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useRef, useCallback, useState } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import { MessageBubble } from "./MessageBubble"
 import { DateSeparator } from "./DateSeparator"
 import { SkeletonMessage } from "./ChatSkeletons"
 import { Message } from "@/types"
 import { isSameDay } from "date-fns"
-import { Loader2, MessageSquarePlus } from "lucide-react"
+import { Loader2, MessageCircle } from "lucide-react"
 import { TypingIndicator } from "@/components/shared/TypingIndicator"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -20,6 +21,15 @@ interface MessageListProps {
   isLoading: boolean
   isRecipientTyping?: boolean
   onReply?: (message: Message) => void
+  onEditMessage?: (messageId: string, content: string) => void
+  onDeleteMessage?: (messageId: string) => void
+  onReact?: (messageId: string, emoji: string) => void
+}
+
+interface RowData {
+  type: "message"
+  message: Message
+  index: number
 }
 
 export function MessageList({
@@ -32,135 +42,115 @@ export function MessageList({
   isLoading,
   isRecipientTyping,
   onReply,
+  onEditMessage,
+  onDeleteMessage,
+  onReact,
 }: MessageListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const topSentinelRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
-  const pendingScrollRef = useRef<string | null>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [showNewMessageToast, setShowNewMessageToast] = useState(false)
-  const lastKnownMessageCount = useRef(messages.length)
   const initialScrollDone = useRef(false)
+  const lastKnownCount = useRef(messages.length)
 
-  // Track scroll position to know if we are at the bottom
+  const rowData: RowData[] = messages.map((message, index) => ({
+    type: "message" as const,
+    message,
+    index,
+  }))
+
+  const virtualizer = useVirtualizer({
+    count: rowData.length + (isRecipientTyping ? 1 : 0),
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => 72,
+    overscan: 10,
+  })
+
+  const virtualItems = virtualizer.getVirtualItems()
+
+  // Check if scrolled near bottom
   const handleScroll = useCallback(() => {
     const container = containerRef.current
     if (!container) return
-
     const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
     setIsAtBottom(isNearBottom)
-
-    if (isNearBottom) {
-      setShowNewMessageToast(false)
-    }
+    if (isNearBottom) setShowNewMessageToast(false)
   }, [])
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    container.addEventListener("scroll", handleScroll)
+    container.addEventListener("scroll", handleScroll, { passive: true })
     return () => container.removeEventListener("scroll", handleScroll)
   }, [handleScroll])
 
-  // Auto-scroll to bottom on initial load and when new messages arrive while at bottom
+  // Initial scroll to bottom
   useEffect(() => {
     if (messages.length === 0) return
-
     if (!initialScrollDone.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "auto" })
+      virtualizer.scrollToIndex(messages.length - 1, { align: "end", behavior: "auto" })
       initialScrollDone.current = true
-      lastKnownMessageCount.current = messages.length
-      return
+      lastKnownCount.current = messages.length
     }
+  }, [messages.length, virtualizer])
 
-    if (messages.length > lastKnownMessageCount.current) {
-      if (isAtBottom) {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-      } else {
-        // Show indicator if new messages arrive from others while user is scrolled up
-        const lastMsg = messages[messages.length - 1]
-        if (lastMsg?.senderId !== currentUserId) {
-          setTimeout(() => setShowNewMessageToast(true), 0)
-        }
+  // Auto-scroll on new messages when at bottom
+  useEffect(() => {
+    if (messages.length <= lastKnownCount.current) return
+    lastKnownCount.current = messages.length
+
+    if (isAtBottom) {
+      virtualizer.scrollToIndex(messages.length - 1, { align: "end", behavior: "smooth" })
+    } else {
+      const lastMsg = messages[messages.length - 1]
+      if (lastMsg?.senderId !== currentUserId) {
+        setShowNewMessageToast(true)
       }
-      lastKnownMessageCount.current = messages.length
     }
-  }, [messages, isAtBottom, currentUserId])
+  }, [messages.length, isAtBottom, currentUserId, virtualizer])
 
-  // Scroll to a specific message by id, with highlight flash
+  // Load more when scrolling past the top
+  const fetchNextPageStable = useCallback(() => fetchNextPage(), [fetchNextPage])
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage || virtualItems.length === 0) return
+    const firstItem = virtualItems[0]
+    if (firstItem.index < 3) {
+      fetchNextPageStable()
+    }
+  }, [virtualItems, hasNextPage, isFetchingNextPage, fetchNextPageStable])
+
+  // Scroll to specific message by id
   const scrollToMessage = useCallback(
     (messageId: string) => {
-      const container = containerRef.current
-      if (!container) return
-
-      const el = container.querySelector(`[data-message-id="${messageId}"]`)
-      if (el) {
-        pendingScrollRef.current = null
-        el.scrollIntoView({ behavior: "smooth", block: "center" })
+      const idx = messages.findIndex((m) => m.id === messageId)
+      if (idx >= 0) {
+        virtualizer.scrollToIndex(idx, { align: "center", behavior: "smooth" })
         setHighlightedId(messageId)
         setTimeout(() => setHighlightedId(null), 1500)
       } else if (hasNextPage && !isFetchingNextPage) {
-        // Message not in DOM yet — load more pages and retry
-        pendingScrollRef.current = messageId
-        fetchNextPage()
+        fetchNextPageStable()
+        // Will retry once more data loads
+        const checkInterval = setInterval(() => {
+          const newIdx = messages.findIndex((m) => m.id === messageId)
+          if (newIdx >= 0) {
+            clearInterval(checkInterval)
+            virtualizer.scrollToIndex(newIdx, { align: "center", behavior: "smooth" })
+            setHighlightedId(messageId)
+            setTimeout(() => setHighlightedId(null), 1500)
+          }
+          if (!hasNextPage) clearInterval(checkInterval)
+        }, 200)
+        setTimeout(() => clearInterval(checkInterval), 10000)
       }
     },
-    [hasNextPage, isFetchingNextPage, fetchNextPage],
+    [messages, hasNextPage, isFetchingNextPage, fetchNextPageStable, virtualizer],
   )
-
-  // When new pages load, retry scrolling to pending message
-  useEffect(() => {
-    const pending = pendingScrollRef.current
-    if (!pending || isFetchingNextPage) return
-
-    // Small delay to let DOM render new messages
-    const timer = setTimeout(() => {
-      const container = containerRef.current
-      if (!container) return
-      const el = container.querySelector(`[data-message-id="${pending}"]`)
-      if (el) {
-        pendingScrollRef.current = null
-        el.scrollIntoView({ behavior: "smooth", block: "center" })
-        setHighlightedId(pending)
-        setTimeout(() => setHighlightedId(null), 1500)
-      } else if (hasNextPage) {
-        fetchNextPage()
-      } else {
-        // All pages loaded and message not found — give up
-        pendingScrollRef.current = null
-      }
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [messages.length, isFetchingNextPage, hasNextPage, fetchNextPage])
-
-  // IntersectionObserver to auto-load older messages when scrolling to top
-  const fetchNextPageStable = useCallback(() => {
-    fetchNextPage()
-  }, [fetchNextPage])
-
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return
-    const sentinel = topSentinelRef.current
-    if (!sentinel) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          fetchNextPageStable()
-        }
-      },
-      { root: containerRef.current, rootMargin: "200px 0px 0px 0px" },
-    )
-
-    observer.observe(sentinel)
-    return () => observer.disconnect()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPageStable])
 
   if (isLoading && messages.length === 0) {
     return (
-      <div className="flex flex-col h-full justify-end px-4 md:px-6 py-6 gap-1 bg-bg-deep">
-        {/* Alternating self/other skeletons to mimic a real chat */}
+      <div className="flex flex-col h-full justify-end px-6 py-4 gap-1 bg-neutral-50 dark:bg-neutral-950">
         <SkeletonMessage isSelf={false} />
         <SkeletonMessage isSelf={false} />
         <SkeletonMessage isSelf={true} />
@@ -175,12 +165,22 @@ export function MessageList({
 
   if (!isLoading && messages.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-bg-deep px-4 text-center">
-        <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-bg-muted">
-          <MessageSquarePlus className="size-6 text-text-low" />
-        </div>
-        <p className="text-sm font-medium text-text-medium mb-1">No messages yet</p>
-        <p className="text-xs text-text-low">Send a message to start the conversation</p>
+      <div className="flex h-full flex-col items-center justify-center px-4 text-center bg-neutral-50 dark:bg-neutral-950">
+        <svg
+          viewBox="0 0 56 56"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="size-14 mb-5 text-neutral-300 dark:text-neutral-600"
+        >
+          <path d="M36 16H20c-2.2 0-4 1.8-4 4v10c0 2.2 1.8 4 4 4h2l4 4 4-4h6c2.2 0 4-1.8 4-4V20c0-2.2-1.8-4-4-4z" />
+          <path d="M42 24c0-2.2-1.8-4-4-4h-2" />
+          <path d="M12 27c0-2.2 1.8-4 4-4h1" />
+        </svg>
+        <p className="font-medium text-neutral-700 dark:text-neutral-300 mb-1">No messages yet</p>
+        <p className="text-sm text-neutral-400">Send a message to start the conversation</p>
       </div>
     )
   }
@@ -188,79 +188,109 @@ export function MessageList({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full overflow-y-auto px-4 md:px-6 py-6 scroll-smooth scrollbar-hide bg-bg-deep"
+      className="flex flex-col h-full overflow-y-auto px-6 py-4 scroll-smooth scrollbar-hide bg-neutral-50 dark:bg-neutral-950"
     >
-      {/* Sentinel for auto-loading older messages */}
-      <div ref={topSentinelRef} className="h-1 w-full shrink-0" />
       {isFetchingNextPage && (
         <div className="flex justify-center py-4">
           <Loader2 className="size-4 animate-spin text-text-low" />
         </div>
       )}
 
-      {messages.map((message, index) => {
-        const prevMessage = messages[index - 1]
-        const isSelf = message.senderId === currentUserId || message.senderId === "__self__"
-
-        // Grouping: same sender AND less than 5 mins apart
-        const isGrouped =
-          prevMessage?.senderId === message.senderId &&
-          new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() <
-            5 * 60 * 1000
-
-        // Date separator: different day from previous message
-        const showDateSeparator =
-          !prevMessage || !isSameDay(new Date(message.createdAt), new Date(prevMessage.createdAt))
-
-        // Unread divider: first message after lastReadAt, only for OTHER users
-        const showUnreadDivider =
-          !isSelf &&
-          lastReadAt &&
-          new Date(message.createdAt) > new Date(lastReadAt) &&
-          (!prevMessage || new Date(prevMessage.createdAt) <= new Date(lastReadAt))
-
-        return (
-          <div
-            key={(message as Message & { _tempId?: string })._tempId || message.id}
-            data-message-id={message.id}
-          >
-            {showDateSeparator && <DateSeparator date={message.createdAt} />}
-            {showUnreadDivider && (
-              <div className="flex items-center gap-4 my-6">
-                <div className="h-px flex-1 bg-brand/30" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-brand">
-                  Unread Messages
-                </span>
-                <div className="h-px flex-1 bg-brand/30" />
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualItems.map((virtualItem) => {
+          if (virtualItem.index >= rowData.length) {
+            // Typing indicator slot
+            return (
+              <div
+                key="typing"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: `${virtualItem.size}px`,
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+              >
+                <AnimatePresence>
+                  {isRecipientTyping && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <TypingIndicator />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            )}
-            <MessageBubble
-              message={message}
-              isSelf={isSelf}
-              isGrouped={isGrouped}
-              onReply={onReply}
-              onScrollToMessage={scrollToMessage}
-              isHighlighted={highlightedId === message.id}
-            />
-          </div>
-        )
-      })}
+            )
+          }
 
-      <AnimatePresence>
-        {isRecipientTyping && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={{ duration: 0.2 }}
-            className="ml-10 mt-2"
-          >
-            <TypingIndicator />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          const data = rowData[virtualItem.index]
+          const message = data.message
+          const prevMessage = virtualItem.index > 0 ? rowData[virtualItem.index - 1]?.message : null
+          const isSelf = message.senderId === currentUserId || message.senderId === "__self__"
 
-      <div ref={bottomRef} className="h-4 w-full shrink-0" />
+          const isGrouped =
+            prevMessage?.senderId === message.senderId &&
+            new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() <
+              5 * 60 * 1000
+
+          const showDateSeparator =
+            !prevMessage || !isSameDay(new Date(message.createdAt), new Date(prevMessage.createdAt))
+
+          const showUnreadDivider =
+            !isSelf &&
+            lastReadAt &&
+            new Date(message.createdAt) > new Date(lastReadAt) &&
+            (!prevMessage || new Date(prevMessage.createdAt) <= new Date(lastReadAt))
+
+          return (
+            <div
+              key={(message as Message & { _tempId?: string })._tempId || message.id}
+              data-message-id={message.id}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
+              {showDateSeparator && <DateSeparator date={message.createdAt} />}
+              {showUnreadDivider && (
+                <div className="flex items-center gap-4 my-6">
+                  <div className="h-px flex-1 bg-indigo-500/30" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
+                    Unread Messages
+                  </span>
+                  <div className="h-px flex-1 bg-indigo-500/30" />
+                </div>
+              )}
+              <MessageBubble
+                message={message}
+                isSelf={isSelf}
+                isGrouped={isGrouped}
+                onReply={onReply}
+                onEdit={onEditMessage}
+                onDelete={onDeleteMessage}
+                onReact={onReact}
+                onScrollToMessage={scrollToMessage}
+                isHighlighted={highlightedId === message.id}
+              />
+            </div>
+          )
+        })}
+      </div>
 
       {/* Floating New Message Indicator */}
       <AnimatePresence>
@@ -269,10 +299,13 @@ export function MessageList({
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-brand text-white shadow-lg shadow-brand/20 hover:bg-brand-dark transition-colors z-50 animate-bounce"
+            onClick={() => {
+              virtualizer.scrollToIndex(messages.length - 1, { align: "end", behavior: "smooth" })
+              setShowNewMessageToast(false)
+            }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500 text-white shadow-sm hover:bg-indigo-600 transition-colors z-50 animate-bounce-once"
           >
-            <MessageSquarePlus className="size-4" />
+            <MessageCircle className="size-4" />
             <span className="text-xs font-bold">New Message</span>
           </motion.button>
         )}
