@@ -4,7 +4,8 @@ import userEvent from "@testing-library/user-event"
 import { MessageBubble } from "@/components/chat/MessageBubble"
 import { Message } from "@/types"
 
-// Mock framer-motion
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
+
 vi.mock("framer-motion", () => ({
   motion: {
     div: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
@@ -19,7 +20,6 @@ vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 
-// Mock next/image
 vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean }) => (
     <img data-testid="mock-image" {...props} />
@@ -45,7 +45,7 @@ describe("MessageBubble", () => {
     expect(screen.getByText("Hello world")).toBeInTheDocument()
   })
 
-  it("shows deleted placeholder when isDeleted", () => {
+  it("shows deleted placeholder when isDeleted as thin separator", () => {
     render(
       <MessageBubble
         message={createMessage({ isDeleted: "true" })}
@@ -64,13 +64,11 @@ describe("MessageBubble", () => {
         isGrouped={false}
       />,
     )
-    expect(screen.getByText("(edited)")).toBeInTheDocument()
+    expect(screen.getByText("Edited")).toBeInTheDocument()
   })
 
   it("shows timestamp", () => {
     render(<MessageBubble message={createMessage()} isSelf={false} isGrouped={false} />)
-    // The date-fns format for 12:00 UTC depends on timezone
-    // Just verify it rendered
     expect(screen.getByText(/:/)).toBeInTheDocument()
   })
 
@@ -82,58 +80,131 @@ describe("MessageBubble", () => {
       <MessageBubble message={createMessage()} isSelf={true} isGrouped={false} onEdit={onEdit} />,
     )
 
-    // Click edit button
-    const editBtn = screen.getByRole("button", { name: "" })
-    // There are multiple buttons in the action group - find the pencil one
-    // The edit button has a Pencil icon
-    const buttons = screen.getAllByRole("button")
-    // Filter by class or content - the pencil icon button
-    // Actually the button is an icon button without accessible name
-    // Let me just trigger the edit by clicking the first action button
-    // Wait, the buttons are in the action overlay that appears on hover
-    // In tests, the group-hover might not work, so let me check the test setup
+    const editBtn = screen.getByRole("button", { name: "Message actions" })
+    await user.click(editBtn)
 
-    // Actually, the edit button is in the action buttons section which has opacity-0
-    // and group-hover/bubble:opacity-100. Since we're not hovering, let me directly
-    // check that the onEdit callback works when called
+    const pencilBtn = await screen.findByRole("menuitem", { name: /edit/i })
+    await user.click(pencilBtn)
 
-    // For now, let me check that the edit button exists when isSelf
-    // We can see there's a button with Pencil icon
-    // Let's just verify the edit functionality by clicking the right button
+    const textarea = screen.getByRole("textbox")
+    await user.clear(textarea)
+    await user.type(textarea, "Edited content")
 
-    // The action buttons are rendered as children of group/bubble div
-    // They are always in the DOM but hidden via opacity
-    // In jsdom, opacity doesn't affect clickability
+    const saveBtn = screen.getByRole("button", { name: "Save edit" })
+    await user.click(saveBtn)
 
-    // Actually let's find the pencil button more carefully
-    // There should be a button with Pencil icon inside
-    // The buttons don't have text, so we need another way
-
-    // The buttons are: Reply (always), Pencil (isSelf), Trash2 (isSelf)
-    // Since isSelf = true, there are 3 buttons. The edit is the 2nd one.
-
-    // Actually, since jsdom doesn't hide elements with opacity, we can click them
-    // Let me find buttons that are in the action div
-    // But I can't easily distinguish them by aria-label since there's none
-
-    // Let me just focus on testing what we can reliably test
-    // instead of the edit flow
-    expect(true).toBe(true)
+    expect(onEdit).toHaveBeenCalledWith("msg-1", "Edited content")
   })
 
-  it("does not show edit/delete buttons when isDeleted", () => {
+  it("calls onDelete when delete confirmed", async () => {
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+
     render(
       <MessageBubble
-        message={createMessage({ isDeleted: "true" })}
+        message={createMessage()}
         isSelf={true}
         isGrouped={false}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
+        onDelete={onDelete}
       />,
     )
-    // The action buttons section is hidden when isDeleted
-    // So the onEdit/onDelete buttons shouldn't be present in the bubble content
-    // We can't easily assert on this due to opacity, but it's in the condition
-    expect(screen.getByText("Message deleted")).toBeInTheDocument()
+
+    const actionsBtn = screen.getByRole("button", { name: "Message actions" })
+    await user.click(actionsBtn)
+
+    const deleteItem = await screen.findByRole("menuitem", { name: /delete/i })
+    await user.click(deleteItem)
+
+    const confirmBtn = screen.getByRole("button", { name: /delete/i })
+    await user.click(confirmBtn)
+
+    expect(onDelete).toHaveBeenCalledWith("msg-1")
+  })
+
+  it("calls onReply when reply clicked", async () => {
+    const user = userEvent.setup()
+    const onReply = vi.fn()
+
+    render(
+      <MessageBubble
+        message={createMessage()}
+        isSelf={false}
+        isGrouped={false}
+        onReply={onReply}
+      />,
+    )
+
+    const actionsBtn = screen.getByRole("button", { name: "Message actions" })
+    await user.click(actionsBtn)
+
+    const replyItem = await screen.findByRole("menuitem", { name: /reply/i })
+    await user.click(replyItem)
+
+    expect(onReply).toHaveBeenCalledWith(expect.objectContaining({ id: "msg-1" }))
+  })
+
+  it("calls onReact when quick reaction clicked", async () => {
+    const user = userEvent.setup()
+    const onReact = vi.fn()
+
+    render(
+      <MessageBubble
+        message={createMessage()}
+        isSelf={false}
+        isGrouped={false}
+        onReact={onReact}
+      />,
+    )
+
+    const addBtn = screen.getByRole("button", { name: "Add reaction" })
+    await user.click(addBtn)
+
+    const firstEmoji = QUICK_EMOJIS[0]
+    const emojiBtn = screen.getByRole("button", { name: `React with ${firstEmoji}` })
+    await user.click(emojiBtn)
+
+    expect(onReact).toHaveBeenCalledWith("msg-1", firstEmoji)
+  })
+
+  it("renders reply preview when replyTo is present", () => {
+    render(
+      <MessageBubble
+        message={createMessage({
+          replyTo: { id: "orig-1", content: "Original message", senderName: "Alice" },
+        })}
+        isSelf={false}
+        isGrouped={false}
+      />,
+    )
+    expect(screen.getByText("Alice")).toBeInTheDocument()
+    expect(screen.getByText("Original message")).toBeInTheDocument()
+  })
+
+  it("hides sender name and avatar when grouped", () => {
+    render(<MessageBubble message={createMessage()} isSelf={false} isGrouped={true} />)
+    expect(screen.queryByText("senderName")).not.toBeInTheDocument()
+  })
+
+  it("shows sender name when not grouped", () => {
+    render(
+      <MessageBubble
+        message={createMessage({ senderName: "Alice" })}
+        isSelf={false}
+        isGrouped={false}
+      />,
+    )
+    expect(screen.getByText("Alice")).toBeInTheDocument()
+  })
+
+  it("shows read more for long content", () => {
+    const longContent = "A".repeat(500)
+    render(
+      <MessageBubble
+        message={createMessage({ content: longContent })}
+        isSelf={false}
+        isGrouped={false}
+      />,
+    )
+    expect(screen.getByText(/read more/i)).toBeInTheDocument()
   })
 })

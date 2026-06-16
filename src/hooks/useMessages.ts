@@ -126,11 +126,31 @@ export function useEditMessage(conversationId: string) {
       if (!res.ok) throw new Error("Failed to edit message")
       return res.json() as Promise<Message>
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["messages", conversationId] })
+    onMutate: async ({ messageId, content }) => {
+      await qc.cancelQueries({ queryKey: ["messages", conversationId] })
+      const previous = qc.getQueryData<PageData>(["messages", conversationId])
+      qc.setQueryData<PageData>(["messages", conversationId], (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            messages: page.messages.map((m) =>
+              m.id === messageId ? { ...m, content, editedAt: new Date().toISOString() } : m,
+            ),
+          })),
+        }
+      })
+      return { previous }
     },
-    onError: () => {
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        qc.setQueryData(["messages", conversationId], context.previous)
+      }
       toast.error("Failed to edit message")
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["messages", conversationId] })
     },
   })
 }
@@ -145,11 +165,31 @@ export function useDeleteMessage(conversationId: string) {
       })
       if (!res.ok) throw new Error("Failed to delete message")
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["messages", conversationId] })
+    onMutate: async (messageId) => {
+      await qc.cancelQueries({ queryKey: ["messages", conversationId] })
+      const previous = qc.getQueryData<PageData>(["messages", conversationId])
+      qc.setQueryData<PageData>(["messages", conversationId], (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            messages: page.messages.map((m) =>
+              m.id === messageId ? { ...m, isDeleted: "true", content: null } : m,
+            ),
+          })),
+        }
+      })
+      return { previous }
     },
-    onError: () => {
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        qc.setQueryData(["messages", conversationId], context.previous)
+      }
       toast.error("Failed to delete message")
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["messages", conversationId] })
     },
   })
 }

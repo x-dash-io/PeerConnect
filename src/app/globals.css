@@ -6,10 +6,10 @@
 
 @theme inline {
   /* Fonts — populated by next/font CSS variables set on <html> */
-  --font-sans: var(--font-lato), system-ui, sans-serif;
-  --font-display: var(--font-manrope), system-ui, sans-serif;
+  --font-sans: var(--font-plus-jakarta), system-ui, sans-serif;
+  --font-display: var(--font-plus-jakarta), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), monospace;
-  --font-heading: var(--font-manrope), system-ui, sans-serif;
+  --font-heading: var(--font-plus-jakarta), system-ui, sans-serif;
 
   /* shadcn color mappings */
   --color-background: var(--background);
@@ -243,7 +243,7 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-manrope), system-ui, sans-serif;
+    font-family: var(--font-plus-jakarta), system-ui, sans-serif;
     font-weight: 700;
     color: var(--text-high);
     line-height: 1.25;
@@ -363,6 +363,24 @@
     60% {
       transform: translateX(-50%) translateY(-4px);
     }
+  }
+
+  /* Chat font size scaling */
+  :root {
+    --msg-font-size: 0.875rem;
+    --msg-line-height: 1.625;
+  }
+  [data-font-size="small"] {
+    --msg-font-size: 0.8125rem;
+    --msg-line-height: 1.5;
+  }
+  [data-font-size="large"] {
+    --msg-font-size: 1rem;
+    --msg-line-height: 1.625;
+  }
+  .msg-text {
+    font-size: var(--msg-font-size);
+    line-height: var(--msg-line-height);
   }
 
   .scrollbar-hide::-webkit-scrollbar {

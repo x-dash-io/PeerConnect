@@ -103,7 +103,7 @@ export async function uploadAudioBlob(blob: Blob): Promise<{ fileId: string; key
   const filename = `voice-${Date.now()}.webm`
 
   // For audio (<20MB): use single pre-signed PUT, not multipart
-  const { url, fileId, key } = await fetch("/api/uploads/simple", {
+  const res = await fetch("/api/uploads/simple", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -111,14 +111,19 @@ export async function uploadAudioBlob(blob: Blob): Promise<{ fileId: string; key
       contentType: "audio/webm",
       sizeBytes: blob.size,
     }),
-  }).then((r) => r.json())
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Upload setup failed" }))
+    throw new Error(err.error || "Upload setup failed")
+  }
+  const { url, fileId, key } = await res.json()
 
-  const res = await fetch(url, {
+  const uploadRes = await fetch(url, {
     method: "PUT",
     body: blob,
     headers: { "Content-Type": "audio/webm" },
   })
-  if (!res.ok) throw new Error("Audio upload to S3 failed")
+  if (!uploadRes.ok) throw new Error("Audio upload to S3 failed")
 
   // Mark complete
   await fetch("/api/uploads/simple/complete", {

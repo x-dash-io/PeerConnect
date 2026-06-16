@@ -39,6 +39,14 @@ export const s3 = new S3Client({
   },
 })
 
+export function requireS3() {
+  if (!isS3Configured || !BUCKET) {
+    throw new Error(
+      "S3/R2 not configured. Set CLOUDFLARE_R2_ACCESS_KEY, CLOUDFLARE_R2_SECRET_KEY, CLOUDFLARE_R2_BUCKET, and CLOUDFLARE_R2_ENDPOINT (or AWS equivalents).",
+    )
+  }
+}
+
 if (!isS3Configured) {
   console.warn(
     "\x1b[33m[S3] Cloudflare R2 or AWS credentials/bucket missing. File uploads will fail.\x1b[0m",

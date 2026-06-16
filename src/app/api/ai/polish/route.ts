@@ -15,21 +15,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Text is too long (max 5000 characters)" }, { status: 400 })
   }
 
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.GROQ_API_KEY
 
   if (!apiKey) {
     return NextResponse.json({ error: "AI polishing is not configured" }, { status: 503 })
   }
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "llama3-70b-8192",
         messages: [
           {
             role: "system",
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const err = await res.text()
-      console.error("[AI Polish] OpenAI error:", err)
+      console.error("[AI Polish] Groq error:", err)
       return NextResponse.json({ error: "AI polishing failed" }, { status: 502 })
     }
 

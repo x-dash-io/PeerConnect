@@ -2,7 +2,18 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import { Users, Briefcase, Zap, CheckCircle, Camera, Loader2, AlertTriangle } from "lucide-react"
+import {
+  Users,
+  Briefcase,
+  Zap,
+  CheckCircle,
+  Camera,
+  Loader2,
+  AlertTriangle,
+  Type,
+  Palette,
+  Image,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -10,7 +21,8 @@ import { UserAvatar } from "@/components/shared"
 import { RoleBadge } from "@/components/shared/RoleBadge"
 import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { cn } from "@/lib/utils"
-import type { UserRole } from "@/types"
+import type { UserRole, FontSize, BubbleTheme, ChatPreferences } from "@/types"
+import { BUBBLE_THEMES } from "@/types"
 
 interface SettingsUser {
   id: string
@@ -20,6 +32,12 @@ interface SettingsUser {
   role: "PEER" | "BUSINESS" | "FREELANCER"
   bio: string | null
 }
+
+const fontSizes: { value: FontSize; label: string; description: string }[] = [
+  { value: "small", label: "Small", description: "Compact view" },
+  { value: "medium", label: "Medium", description: "Default size" },
+  { value: "large", label: "Large", description: "Easier reading" },
+]
 
 const roles = [
   {
@@ -42,7 +60,13 @@ const roles = [
   },
 ]
 
-export function SettingsForm({ user }: { user: SettingsUser }) {
+export function SettingsForm({
+  user,
+  initialPreferences,
+}: {
+  user: SettingsUser
+  initialPreferences: Record<string, unknown>
+}) {
   const [name, setName] = useState(user.name ?? "")
   const [bio, setBio] = useState(user.bio ?? "")
   const [avatarUrl, setAvatarUrl] = useState(user.image ?? "")
@@ -50,6 +74,17 @@ export function SettingsForm({ user }: { user: SettingsUser }) {
   const [savingAvatar, setSavingAvatar] = useState(false)
   const [selectedRole, setSelectedRole] = useState<UserRole>(user.role)
   const [savingRole, setSavingRole] = useState(false)
+
+  const [fontSize, setFontSize] = useState<FontSize>(
+    (initialPreferences.fontSize as FontSize) ?? "medium",
+  )
+  const [bubbleTheme, setBubbleTheme] = useState<BubbleTheme>(
+    (initialPreferences.bubbleTheme as BubbleTheme) ?? "indigo",
+  )
+  const [wallpaper, setWallpaper] = useState<string | null>(
+    (initialPreferences.wallpaper as string) ?? null,
+  )
+  const [savingChatPrefs, setSavingChatPrefs] = useState(false)
 
   const profileDirty =
     name !== (user.name ?? "") || bio !== (user.bio ?? "") || avatarUrl !== (user.image ?? "")
@@ -129,6 +164,23 @@ export function SettingsForm({ user }: { user: SettingsUser }) {
       toast.error("Failed to update role")
     } finally {
       setSavingRole(false)
+    }
+  }
+
+  async function saveChatPrefs() {
+    setSavingChatPrefs(true)
+    try {
+      const res = await fetch("/api/users/me/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fontSize, bubbleTheme, wallpaper }),
+      })
+      if (!res.ok) throw new Error("Failed to save")
+      toast.success("Chat preferences updated")
+    } catch {
+      toast.error("Failed to update chat preferences")
+    } finally {
+      setSavingChatPrefs(false)
     }
   }
 
@@ -264,6 +316,131 @@ export function SettingsForm({ user }: { user: SettingsUser }) {
             className="h-9 bg-brand px-5 text-white hover:bg-brand-hover active:scale-[0.98] transition-all disabled:opacity-40"
           >
             {savingRole ? <Loader2 className="size-4 animate-spin" /> : "Confirm Role"}
+          </Button>
+        </div>
+      </section>
+
+      {/* Chat Settings */}
+      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow">
+        <h2 className="font-display text-lg font-semibold text-text-high">Chat</h2>
+        <p className="mt-0.5 text-sm text-text-medium">Customize your messaging experience</p>
+
+        {/* Font Size */}
+        <div className="mt-6">
+          <label className="flex items-center gap-2 text-sm font-medium text-text-high">
+            <Type className="size-4 text-text-medium" />
+            Font Size
+          </label>
+          <div className="mt-3 flex gap-2">
+            {fontSizes.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setFontSize(opt.value)}
+                className={cn(
+                  "flex-1 rounded-xl px-4 py-3 text-center transition-all duration-200 cursor-pointer",
+                  fontSize === opt.value
+                    ? "border-2 border-brand bg-brand-subtle shadow-sm"
+                    : "border border-border-main bg-bg-deep hover:bg-bg-muted",
+                )}
+              >
+                <span
+                  className={cn(
+                    "block font-semibold",
+                    fontSize === opt.value ? "text-brand" : "text-text-high",
+                  )}
+                >
+                  {opt.label}
+                </span>
+                <span className="mt-0.5 block text-xs text-text-medium">{opt.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Bubble Theme */}
+        <div className="mt-6">
+          <label className="flex items-center gap-2 text-sm font-medium text-text-high">
+            <Palette className="size-4 text-text-medium" />
+            Bubble Color
+          </label>
+          <div className="mt-3 grid grid-cols-6 gap-2">
+            {(
+              Object.entries(BUBBLE_THEMES) as [BubbleTheme, (typeof BUBBLE_THEMES)[BubbleTheme]][]
+            ).map(([key, theme]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setBubbleTheme(key)}
+                className={cn(
+                  "relative flex aspect-square items-center justify-center rounded-xl transition-all duration-200 cursor-pointer",
+                  bubbleTheme === key
+                    ? "ring-2 ring-brand ring-offset-2 ring-offset-bg-surface scale-105"
+                    : "hover:scale-105",
+                )}
+                title={theme.name}
+              >
+                <span
+                  className={cn(
+                    "flex h-full w-full items-center justify-center rounded-lg",
+                    theme.outgoing.split(" ").slice(0, 2).join(" "),
+                  )}
+                >
+                  <span className="text-[10px] font-bold text-white/90">A</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-text-medium">
+            Selected:{" "}
+            <span className="font-medium text-text-high">{BUBBLE_THEMES[bubbleTheme].name}</span>
+          </p>
+        </div>
+
+        {/* Wallpaper */}
+        <div className="mt-6">
+          <label className="flex items-center gap-2 text-sm font-medium text-text-high">
+            <Image className="size-4 text-text-medium" />
+            Chat Wallpaper
+          </label>
+          <div className="mt-3 flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const url = prompt("Enter wallpaper image URL:")
+                if (url) setWallpaper(url)
+              }}
+              className="border-border-main text-text-medium hover:text-text-high"
+            >
+              {wallpaper ? "Change Wallpaper" : "Set Wallpaper"}
+            </Button>
+            {wallpaper && (
+              <Button
+                variant="ghost"
+                onClick={() => setWallpaper(null)}
+                className="text-danger hover:text-danger hover:bg-danger/10"
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+          {wallpaper && (
+            <div className="mt-3 overflow-hidden rounded-xl border border-border-subtle">
+              <div
+                className="h-24 w-full rounded-lg bg-cover bg-center"
+                style={{ backgroundImage: `url(${wallpaper})` }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button
+            onClick={saveChatPrefs}
+            disabled={savingChatPrefs}
+            className="h-9 bg-brand px-5 text-white hover:bg-brand-hover active:scale-[0.98] transition-all disabled:opacity-40"
+          >
+            {savingChatPrefs ? <Loader2 className="size-4 animate-spin" /> : "Save Chat Settings"}
           </Button>
         </div>
       </section>

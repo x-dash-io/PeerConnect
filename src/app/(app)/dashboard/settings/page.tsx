@@ -17,11 +17,18 @@ export default async function SettingsPage() {
       image: users.image,
       role: users.role,
       bio: users.bio,
+      chatPreferences: users.chatPreferences,
     })
     .from(users)
     .where(eq(users.id, session.user.id))
 
   if (!user) redirect("/login")
+
+  const defaultPrefs = { fontSize: "medium", bubbleTheme: "indigo", wallpaper: null }
+  const initialPreferences = {
+    ...defaultPrefs,
+    ...((user.chatPreferences as Record<string, unknown>) ?? {}),
+  }
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-8 p-6 md:p-10">
@@ -30,7 +37,7 @@ export default async function SettingsPage() {
         <p className="mt-1 text-sm text-text-medium">Manage your profile and account preferences</p>
       </div>
 
-      <SettingsForm user={user} />
+      <SettingsForm user={user} initialPreferences={initialPreferences} />
     </div>
   )
 }

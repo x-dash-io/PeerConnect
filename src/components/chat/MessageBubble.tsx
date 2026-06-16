@@ -6,6 +6,8 @@ import { Reply, ChevronDown, ChevronUp, Pencil, Trash2, X, Check, Plus } from "l
 import { cn, getInitials } from "@/lib/utils"
 import { Message } from "@/types"
 import { MessageStatusIcon } from "@/components/shared/MessageStatusIcon"
+import { useChatPreferences } from "@/providers/ChatPreferencesProvider"
+import { BUBBLE_THEMES } from "@/types"
 import { FileAttachmentCard } from "./FileAttachmentCard"
 import { ImagePreview } from "./ImagePreview"
 import { VideoPlayer } from "./VideoPlayer"
@@ -66,7 +68,12 @@ export function MessageBubble({
   const isLong = (message.content?.length ?? 0) > COLLAPSED_CHAR_LIMIT
   const isDeleted = message.isDeleted === "true"
   const effectivelyGrouped = isGrouped && !isDeleted
-  const messageStatus = message.status.toLowerCase() as "sending" | "sent" | "delivered" | "read"
+  const messageStatus = (message.status?.toLowerCase() ?? "sent") as
+    | "sending"
+    | "sent"
+    | "delivered"
+    | "read"
+  const { bubbleTheme } = useChatPreferences()
 
   useEffect(() => {
     if (isEditing && editInputRef.current) {
@@ -91,6 +98,24 @@ export function MessageBubble({
     setIsEditing(false)
   }
 
+  if (isDeleted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex w-full justify-center mb-1"
+      >
+        <div className="flex items-center gap-2 max-w-[240px] w-full px-2 select-none">
+          <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
+          <span className="text-[10px] text-neutral-400 italic whitespace-nowrap">
+            Message deleted
+          </span>
+          <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
+        </div>
+      </motion.div>
+    )
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -113,10 +138,6 @@ export function MessageBubble({
   }
 
   const renderMessageContent = () => {
-    if (isDeleted) {
-      return <div className="italic text-neutral-400 text-xs">Message deleted</div>
-    }
-
     switch (message.type) {
       case "IMAGE":
         return message.file ? (
@@ -202,7 +223,7 @@ export function MessageBubble({
         <div className="flex flex-col min-w-0 max-w-full">
           {/* Sender name — received only, first in group */}
           {!isSelf && !effectivelyGrouped && (
-            <span className="text-[10px] font-medium text-neutral-400 mb-0.5 ml-1">
+            <span className="text-[10px] font-medium text-neutral-400 mb-1.5 ml-1.5">
               {message.senderName}
             </span>
           )}
@@ -211,15 +232,16 @@ export function MessageBubble({
             {/* Bubble */}
             <div
               className={cn(
-                "px-4 py-2.5 text-sm/relaxed break-words",
+                "px-5 py-3 msg-text break-words transition-all",
                 isSelf
-                  ? "bg-indigo-500 dark:bg-indigo-600 text-white rounded-2xl rounded-br-sm"
-                  : "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-2xl rounded-tl-sm border border-neutral-200 dark:border-neutral-700",
-                effectivelyGrouped && isSelf && "rounded-br-sm rounded-tr-sm",
-                !effectivelyGrouped && isSelf && "rounded-br-sm",
-                effectivelyGrouped && !isSelf && "rounded-tl-sm rounded-bl-sm",
-                !effectivelyGrouped && !isSelf && "rounded-tl-sm",
-                isDeleted && "opacity-60",
+                  ? (BUBBLE_THEMES[bubbleTheme]?.outgoing ?? BUBBLE_THEMES.indigo.outgoing) +
+                      " rounded-3xl rounded-br-md"
+                  : (BUBBLE_THEMES[bubbleTheme]?.incoming ?? BUBBLE_THEMES.indigo.incoming) +
+                      " rounded-3xl rounded-tl-md",
+                effectivelyGrouped && isSelf && "rounded-br-md rounded-tr-md",
+                !effectivelyGrouped && isSelf && "rounded-br-md",
+                effectivelyGrouped && !isSelf && "rounded-tl-md rounded-bl-md",
+                !effectivelyGrouped && !isSelf && "rounded-tl-md",
               )}
             >
               {/* Reply preview */}
@@ -228,21 +250,23 @@ export function MessageBubble({
                   type="button"
                   onClick={() => message.replyTo?.id && onScrollToMessage?.(message.replyTo.id)}
                   className={cn(
-                    "mb-2 rounded-lg px-2.5 py-1.5 border-l-2 text-xs text-left w-full transition-colors cursor-pointer",
+                    "mb-3 rounded-xl px-3 py-2.5 border-l-2.5 text-xs text-left w-full transition-colors cursor-pointer",
                     isSelf
-                      ? "bg-white/10 border-white/40 text-white/80 hover:bg-white/15"
-                      : "bg-neutral-100 dark:bg-neutral-700 border-indigo-400 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600",
+                      ? "bg-white/15 border-white/50 text-white/85 hover:bg-white/20"
+                      : "bg-neutral-100/60 dark:bg-neutral-700/70 border-indigo-400/70 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-700",
                   )}
                 >
                   <span
                     className={cn(
-                      "font-medium text-[10px] block",
-                      isSelf ? "text-white/90" : "text-indigo-500",
+                      "font-semibold text-[10px] block mb-0.5",
+                      isSelf ? "text-white/95" : "text-indigo-600 dark:text-indigo-400",
                     )}
                   >
                     {message.replyTo.senderName}
                   </span>
-                  <span className="line-clamp-1">{message.replyTo.content || "Attachment"}</span>
+                  <span className="line-clamp-1 text-opacity-80">
+                    {message.replyTo.content || "Attachment"}
+                  </span>
                 </button>
               )}
 
@@ -264,6 +288,7 @@ export function MessageBubble({
                   <div className="flex items-center gap-1.5 mt-1.5 justify-end">
                     <button
                       onClick={handleCancelEdit}
+                      aria-label="Cancel edit"
                       className={cn(
                         "size-6 rounded flex items-center justify-center transition-colors",
                         isSelf
@@ -275,6 +300,7 @@ export function MessageBubble({
                     </button>
                     <button
                       onClick={handleSaveEdit}
+                      aria-label="Save edit"
                       className={cn(
                         "size-6 rounded flex items-center justify-center transition-colors",
                         isSelf
@@ -294,11 +320,12 @@ export function MessageBubble({
                   {isLong && (
                     <button
                       onClick={() => setExpanded(!expanded)}
+                      aria-label={expanded ? "Show less" : "Read more"}
                       className={cn(
-                        "flex items-center gap-0.5 text-[11px] font-medium mt-1.5 transition-colors",
+                        "flex items-center gap-1 text-[11px] font-semibold mt-2 transition-colors",
                         isSelf
-                          ? "text-white/80 hover:text-white"
-                          : "text-indigo-500 hover:text-indigo-600",
+                          ? "text-white/70 hover:text-white"
+                          : "text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400",
                       )}
                     >
                       {expanded ? (
@@ -314,38 +341,38 @@ export function MessageBubble({
                   )}
 
                   {/* Timestamp + status — inside bubble */}
-                  <span
+                  <div
                     className={cn(
-                      "float-right ml-3 mt-1 mb-[-2px] flex items-center gap-1",
-                      "select-none pointer-events-none",
+                      "flex items-center justify-end gap-1.5 mt-2.5 pt-1.5",
+                      isSelf && "border-t border-white/10",
+                      !isSelf && "border-t border-neutral-200/50 dark:border-neutral-700/30",
                     )}
                   >
-                    {isSelf && !isDeleted && (
-                      <MessageStatusIcon status={messageStatus} variant="inline" />
-                    )}
+                    {isSelf && <MessageStatusIcon status={messageStatus} variant="inline" />}
                     <span
                       className={cn(
-                        "text-[10px] tabular-nums leading-none",
-                        isSelf ? "text-white/60" : "text-neutral-400",
+                        "text-[10px] tabular-nums leading-none whitespace-nowrap font-medium",
+                        isSelf ? "text-white/65" : "text-neutral-400 dark:text-neutral-500",
                       )}
                     >
                       {timestamp}
                     </span>
-                  </span>
+                  </div>
                 </>
               )}
             </div>
 
             {/* Action trigger — appears on hover */}
-            {!isEditing && !isDeleted && (
+            {!isEditing && (
               <DropdownMenu>
                 <DropdownMenuTrigger
+                  aria-label="Message actions"
                   className={cn(
-                    "absolute top-1 opacity-0 group-hover/bubble:opacity-100",
-                    "transition-opacity size-6 rounded-full flex items-center",
+                    "absolute top-1 max-sm:opacity-100 sm:opacity-0 sm:group-hover/bubble:opacity-100",
+                    "transition-opacity size-7 rounded-full flex items-center",
                     "justify-center bg-neutral-100 dark:bg-neutral-700",
                     "text-neutral-500 hover:text-neutral-800 shadow-sm",
-                    isSelf ? "left-1" : "right-1",
+                    isSelf ? "-left-2" : "-right-2",
                   )}
                 >
                   <ChevronDown className="size-3.5" />
@@ -382,11 +409,12 @@ export function MessageBubble({
           </div>
 
           {/* Reactions */}
-          {!isDeleted && message.reactions && message.reactions.length > 0 && (
+          {message.reactions && message.reactions.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {groupReactions(message.reactions).map(({ emoji, count, hasMine }) => (
                 <button
                   key={emoji}
+                  aria-label={`React with ${emoji}`}
                   onClick={() => onReact?.(message.id, emoji)}
                   className={cn(
                     "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-all",
@@ -403,14 +431,14 @@ export function MessageBubble({
             </div>
           )}
 
-          {!isDeleted && (!message.reactions || message.reactions.length === 0) && (
+          {(!message.reactions || message.reactions.length === 0) && (
             <div className="flex mt-1">
               <QuickReactionPicker messageId={message.id} onReact={onReact} />
             </div>
           )}
 
           {/* Edited label — outside bubble */}
-          {message.editedAt && !isDeleted && (
+          {message.editedAt && (
             <span className="text-[10px] text-neutral-400 italic mt-0.5">Edited</span>
           )}
         </div>
@@ -466,23 +494,25 @@ function QuickReactionPicker({
   if (!onReact) return null
 
   return (
-    <div className="relative">
+    <div className="relative inline-flex">
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center justify-center size-5 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-white dark:hover:bg-neutral-700 transition-all text-xs"
+        aria-label="Add reaction"
+        className="inline-flex items-center justify-center size-6 rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-white dark:hover:bg-neutral-700 transition-all text-xs"
       >
-        <Plus className="size-3" />
+        <Plus className="size-3.5" />
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 mb-1 flex gap-0.5 p-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm z-10">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex gap-0.5 p-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-md z-20 whitespace-nowrap">
           {QUICK_EMOJIS.map((emoji) => (
             <button
               key={emoji}
+              aria-label={`React with ${emoji}`}
               onClick={() => {
                 onReact(messageId, emoji)
                 setOpen(false)
               }}
-              className="size-6 flex items-center justify-center rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-sm transition-colors"
+              className="size-7 flex items-center justify-center rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-sm transition-colors"
             >
               {emoji}
             </button>

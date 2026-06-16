@@ -1,3 +1,60 @@
+export type FontSize = "small" | "medium" | "large"
+export type BubbleTheme = "indigo" | "emerald" | "violet" | "rose" | "amber" | "sky"
+
+export interface ChatPreferences {
+  fontSize: FontSize
+  bubbleTheme: BubbleTheme
+  wallpaper: string | null
+}
+
+export const BUBBLE_THEMES: Record<
+  BubbleTheme,
+  { name: string; outgoing: string; incoming: string }
+> = {
+  indigo: {
+    name: "Indigo",
+    outgoing:
+      "bg-indigo-500 dark:bg-indigo-600 text-white shadow-md shadow-indigo-500/20 dark:shadow-indigo-900/30",
+    incoming:
+      "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200/80 dark:border-neutral-700/60 shadow-sm",
+  },
+  emerald: {
+    name: "Emerald",
+    outgoing:
+      "bg-emerald-500 dark:bg-emerald-600 text-white shadow-md shadow-emerald-500/20 dark:shadow-emerald-900/30",
+    incoming:
+      "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200/80 dark:border-neutral-700/60 shadow-sm",
+  },
+  violet: {
+    name: "Violet",
+    outgoing:
+      "bg-violet-500 dark:bg-violet-600 text-white shadow-md shadow-violet-500/20 dark:shadow-violet-900/30",
+    incoming:
+      "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200/80 dark:border-neutral-700/60 shadow-sm",
+  },
+  rose: {
+    name: "Rose",
+    outgoing:
+      "bg-rose-500 dark:bg-rose-600 text-white shadow-md shadow-rose-500/20 dark:shadow-rose-900/30",
+    incoming:
+      "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200/80 dark:border-neutral-700/60 shadow-sm",
+  },
+  amber: {
+    name: "Amber",
+    outgoing:
+      "bg-amber-500 dark:bg-amber-600 text-white shadow-md shadow-amber-500/20 dark:shadow-amber-900/30",
+    incoming:
+      "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200/80 dark:border-neutral-700/60 shadow-sm",
+  },
+  sky: {
+    name: "Sky",
+    outgoing:
+      "bg-sky-500 dark:bg-sky-600 text-white shadow-md shadow-sky-500/20 dark:shadow-sky-900/30",
+    incoming:
+      "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200/80 dark:border-neutral-700/60 shadow-sm",
+  },
+}
+
 export type UserRole = "PEER" | "BUSINESS" | "FREELANCER"
 export type MessageType = "TEXT" | "AUDIO" | "FILE" | "IMAGE" | "VIDEO"
 export type MessageStatus = "SENDING" | "SENT" | "DELIVERED" | "READ"
@@ -45,6 +102,7 @@ export interface Message {
   isDeleted?: string
   reactions?: MessageReaction[]
   createdAt: string
+  _tempId?: string
 }
 
 export interface FileAttachment {

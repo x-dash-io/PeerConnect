@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { MessageSquare, Users, Zap, Settings, LogOut, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { AvatarWithPresence } from "@/components/shared"
+import { AvatarWithPresence, Logo } from "@/components/shared"
 import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { MessageSearch } from "@/components/chat/MessageSearch"
@@ -42,12 +42,7 @@ export function NavRail({ userName, userImage }: NavRailProps) {
   return (
     <nav className="hidden md:flex w-[68px] shrink-0 flex-col items-center justify-between border-r border-border-subtle bg-bg-surface/60 backdrop-blur-xl py-5">
       {/* Logo */}
-      <Link
-        href="/dashboard"
-        className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-accent-cyan font-display text-lg font-bold text-white shadow-lg glow-brand-sm transition-transform hover:scale-105 active:scale-95"
-      >
-        P
-      </Link>
+      <Logo imageSize={40} showText={false} />
 
       {/* Navigation */}
       <div className="flex flex-1 flex-col items-center gap-1.5 pt-8">

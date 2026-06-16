@@ -1,20 +1,13 @@
 import type { Metadata } from "next"
-import { Manrope, Lato, JetBrains_Mono } from "next/font/google"
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/providers/ThemeProvider"
 import "./globals.css"
 
-const manrope = Manrope({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-manrope",
-})
-
-const lato = Lato({
-  weight: ["400", "700"],
-  style: ["normal", "italic"],
-  subsets: ["latin"],
-  variable: "--font-lato",
+  variable: "--font-plus-jakarta",
 })
 
 const jetbrainsMono = JetBrains_Mono({
@@ -35,7 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${lato.variable} ${jetbrainsMono.variable}`}
+      className={`${plusJakarta.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <body>

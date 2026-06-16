@@ -39,6 +39,7 @@ export const users = pgTable("users", {
   password: text("password"), // bcrypt hashed, null for OAuth
   role: userRoleEnum("role").default("PEER").notNull(),
   bio: text("bio"),
+  chatPreferences: jsonb("chat_preferences"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
@@ -125,6 +126,10 @@ export const messages = pgTable(
     conversationIdx: index("messages_conversation_idx").on(table.conversationId),
     senderIdx: index("messages_sender_idx").on(table.senderId),
     createdAtIdx: index("messages_created_at_idx").on(table.createdAt),
+    conversationCreatedAtIdx: index("messages_conv_created_at_idx").on(
+      table.conversationId,
+      table.createdAt,
+    ),
   }),
 )
 

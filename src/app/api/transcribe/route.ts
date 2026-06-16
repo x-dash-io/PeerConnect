@@ -4,10 +4,7 @@ import { db } from "@/lib/db"
 import { messages } from "@/lib/schema"
 import { eq } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
 import { csrfGuard } from "@/lib/csrf"
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function POST(req: NextRequest) {
   const guard = csrfGuard(req)
@@ -42,15 +39,30 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Pass the S3 signed URL directly to OpenAI Whisper
-    // to avoid double bandwidth through the server
-    const signedUrl = await getDownloadUrl(s3Key, 600) // 10 min for Whisper processing
+    const apiKey = process.env.GROQ_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: "Transcription is not configured" }, { status: 503 })
+    }
 
-    const result = await openai.audio.transcriptions.create({
-      file: await fetch(signedUrl).then((r) => r.blob()),
-      model: "whisper-1",
+    const signedUrl = await getDownloadUrl(s3Key, 600)
+
+    const form = new FormData()
+    form.append("model", "whisper-large-v3-turbo")
+    form.append("file", await fetch(signedUrl).then((r) => r.blob()), "audio.webm")
+
+    const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
     })
 
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error("[Transcribe] Groq error:", errText)
+      return NextResponse.json({ error: "Transcription failed" }, { status: 502 })
+    }
+
+    const result = (await res.json()) as { text: string }
     const transcription = result.text
 
     // Cache the transcription in message metadata

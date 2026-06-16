@@ -1,5 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { MessageReaction } from "@/types"
+import { Message, MessageReaction } from "@/types"
+
+interface MessagesPage {
+  messages: Message[]
+  nextCursor: string | null
+}
+
+interface MessagesCache {
+  pages: MessagesPage[]
+  pageParams: unknown[]
+}
 
 export function useToggleReaction(conversationId: string) {
   const qc = useQueryClient()
@@ -21,7 +31,51 @@ export function useToggleReaction(conversationId: string) {
         reactionId?: string
       }>
     },
-    onSuccess: () => {
+    onMutate: async ({ messageId, emoji }) => {
+      await qc.cancelQueries({ queryKey: ["messages", conversationId] })
+
+      const previous = qc.getQueryData<MessagesCache>(["messages", conversationId])
+
+      qc.setQueryData<MessagesCache>(["messages", conversationId], (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            messages: page.messages.map((msg) => {
+              if (msg.id !== messageId) return msg
+              const existing = msg.reactions || []
+              const mine = existing.find((r) => r.userId === "__self__" && r.emoji === emoji)
+              if (mine) {
+                return {
+                  ...msg,
+                  reactions: existing.filter((r) => r.id !== mine.id),
+                }
+              }
+              const optimistic: MessageReaction = {
+                id: `optimistic-${Date.now()}`,
+                messageId,
+                userId: "__self__",
+                emoji,
+                createdAt: new Date().toISOString(),
+              }
+              return {
+                ...msg,
+                reactions: [...existing, optimistic],
+              }
+            }),
+          })),
+        }
+      })
+
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        qc.setQueryData(["messages", conversationId], context.previous)
+      }
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["messages", conversationId] })
     },
   })

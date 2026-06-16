@@ -10,6 +10,7 @@ import { isSameDay } from "date-fns"
 import { Loader2, MessageCircle } from "lucide-react"
 import { TypingIndicator } from "@/components/shared/TypingIndicator"
 import { AnimatePresence, motion } from "framer-motion"
+import { useChatPreferences } from "@/providers/ChatPreferencesProvider"
 
 interface MessageListProps {
   messages: Message[]
@@ -52,6 +53,7 @@ export function MessageList({
   const [showNewMessageToast, setShowNewMessageToast] = useState(false)
   const initialScrollDone = useRef(false)
   const lastKnownCount = useRef(messages.length)
+  const scrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const rowData: RowData[] = messages.map((message, index) => ({
     type: "message" as const,
@@ -62,9 +64,21 @@ export function MessageList({
   const virtualizer = useVirtualizer({
     count: rowData.length + (isRecipientTyping ? 1 : 0),
     getScrollElement: () => containerRef.current,
-    estimateSize: () => 72,
+    estimateSize: (index: number) => {
+      if (index >= rowData.length) return 40
+      const msg = rowData[index].message
+      if (msg.isDeleted === "true") return 28
+      if (msg.type === "IMAGE" || msg.type === "VIDEO") return 220
+      if (msg.file) return 150
+      if (msg.replyTo) return 120
+      if ((msg.content?.length ?? 0) > 400) return 100
+      return 72
+    },
     overscan: 10,
+    measureElement: (element) => element.getBoundingClientRect().height,
   })
+
+  const { wallpaper, fontSize } = useChatPreferences()
 
   const virtualItems = virtualizer.getVirtualItems()
 
@@ -120,6 +134,16 @@ export function MessageList({
     }
   }, [virtualItems, hasNextPage, isFetchingNextPage, fetchNextPageStable])
 
+  // Clean up scroll interval on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current)
+        scrollIntervalRef.current = null
+      }
+    }
+  }, [])
+
   // Scroll to specific message by id
   const scrollToMessage = useCallback(
     (messageId: string) => {
@@ -130,18 +154,35 @@ export function MessageList({
         setTimeout(() => setHighlightedId(null), 1500)
       } else if (hasNextPage && !isFetchingNextPage) {
         fetchNextPageStable()
+        // Clear any previous interval before starting a new one
+        if (scrollIntervalRef.current) {
+          clearInterval(scrollIntervalRef.current)
+        }
         // Will retry once more data loads
-        const checkInterval = setInterval(() => {
+        scrollIntervalRef.current = setInterval(() => {
           const newIdx = messages.findIndex((m) => m.id === messageId)
           if (newIdx >= 0) {
-            clearInterval(checkInterval)
+            if (scrollIntervalRef.current) {
+              clearInterval(scrollIntervalRef.current)
+              scrollIntervalRef.current = null
+            }
             virtualizer.scrollToIndex(newIdx, { align: "center", behavior: "smooth" })
             setHighlightedId(messageId)
             setTimeout(() => setHighlightedId(null), 1500)
           }
-          if (!hasNextPage) clearInterval(checkInterval)
+          if (!hasNextPage) {
+            if (scrollIntervalRef.current) {
+              clearInterval(scrollIntervalRef.current)
+              scrollIntervalRef.current = null
+            }
+          }
         }, 200)
-        setTimeout(() => clearInterval(checkInterval), 10000)
+        setTimeout(() => {
+          if (scrollIntervalRef.current) {
+            clearInterval(scrollIntervalRef.current)
+            scrollIntervalRef.current = null
+          }
+        }, 10000)
       }
     },
     [messages, hasNextPage, isFetchingNextPage, fetchNextPageStable, virtualizer],
@@ -149,7 +190,18 @@ export function MessageList({
 
   if (isLoading && messages.length === 0) {
     return (
-      <div className="flex flex-col h-full justify-end px-6 py-4 gap-1 bg-neutral-50 dark:bg-neutral-950">
+      <div
+        className="flex flex-col h-full justify-end px-6 py-4 gap-1 bg-neutral-50 dark:bg-neutral-950"
+        style={
+          wallpaper
+            ? {
+                backgroundImage: `url(${wallpaper})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : undefined
+        }
+      >
         <SkeletonMessage isSelf={false} />
         <SkeletonMessage isSelf={false} />
         <SkeletonMessage isSelf={true} />
@@ -164,7 +216,18 @@ export function MessageList({
 
   if (!isLoading && messages.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center px-4 text-center bg-neutral-50 dark:bg-neutral-950">
+      <div
+        className="flex h-full flex-col items-center justify-center px-4 text-center bg-neutral-50/80 dark:bg-neutral-950/80"
+        style={
+          wallpaper
+            ? {
+                backgroundImage: `url(${wallpaper})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : undefined
+        }
+      >
         <svg
           viewBox="0 0 56 56"
           fill="none"
@@ -187,7 +250,17 @@ export function MessageList({
   return (
     <div
       ref={containerRef}
+      data-font-size={fontSize}
       className="flex flex-col h-full overflow-y-auto px-6 py-4 scroll-smooth scrollbar-hide bg-neutral-50 dark:bg-neutral-950"
+      style={
+        wallpaper
+          ? {
+              backgroundImage: `url(${wallpaper})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : undefined
+      }
     >
       {isFetchingNextPage && (
         <div className="flex justify-center py-4">
@@ -256,14 +329,15 @@ export function MessageList({
 
           return (
             <div
-              key={(message as Message & { _tempId?: string })._tempId || message.id}
+              ref={virtualizer.measureElement}
+              key={message._tempId || message.id}
+              data-index={virtualItem.index}
               data-message-id={message.id}
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 width: "100%",
-                height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >

@@ -17,20 +17,24 @@ export default async function ConversationPage({
   const { conversationId } = await params
   const userId = session.user.id
 
-  // Verify participation and fetch conversation details
-  // Using standard select for better type inference with current config
-  const participantsList = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      image: users.image,
-      role: users.role,
-      bio: users.bio,
-    })
-    .from(conversationParticipants)
-    .innerJoin(users, eq(conversationParticipants.userId, users.id))
-    .where(eq(conversationParticipants.conversationId, conversationId))
+  let participantsList: UserProfile[]
+  try {
+    participantsList = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        image: users.image,
+        role: users.role,
+        bio: users.bio,
+      })
+      .from(conversationParticipants)
+      .innerJoin(users, eq(conversationParticipants.userId, users.id))
+      .where(eq(conversationParticipants.conversationId, conversationId))
+  } catch (err) {
+    console.error("[ConversationPage] Failed to fetch participants:", err)
+    redirect("/dashboard?error=database_error")
+  }
 
   if (participantsList.length === 0) {
     notFound()
@@ -43,16 +47,22 @@ export default async function ConversationPage({
   }
 
   // Fetch current user's specific participation data (like lastReadAt)
-  const [currentUserParticipant] = await db
-    .select({ lastReadAt: conversationParticipants.lastReadAt })
-    .from(conversationParticipants)
-    .where(
-      and(
-        eq(conversationParticipants.conversationId, conversationId),
-        eq(conversationParticipants.userId, userId),
-      ),
-    )
-    .limit(1)
+  let currentUserParticipant: { lastReadAt: Date | null } | null = null
+  try {
+    ;[currentUserParticipant] = await db
+      .select({ lastReadAt: conversationParticipants.lastReadAt })
+      .from(conversationParticipants)
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId),
+        ),
+      )
+      .limit(1)
+  } catch (err) {
+    console.error("[ConversationPage] Failed to fetch participant data:", err)
+    redirect("/dashboard?error=database_error")
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-bg-deep">

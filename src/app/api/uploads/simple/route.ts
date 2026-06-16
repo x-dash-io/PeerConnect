@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth"
-import { s3, generateS3Key, BUCKET } from "@/lib/s3"
+import { s3, generateS3Key, BUCKET, requireS3 } from "@/lib/s3"
 import { db } from "@/lib/db"
 import { files } from "@/lib/schema"
 import { generateId } from "@/lib/id"
@@ -17,6 +17,15 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    requireS3()
+  } catch {
+    return NextResponse.json(
+      { error: "File uploads are not configured on this server." },
+      { status: 501 },
+    )
   }
 
   const { filename, contentType, sizeBytes } = await req.json()
