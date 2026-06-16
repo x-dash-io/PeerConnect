@@ -2,11 +2,10 @@
 
 import { forwardRef, useImperativeHandle, useRef, useCallback } from "react"
 import type { KeyboardEvent, ClipboardEvent } from "react"
-import type { TelegramEmoji } from "@/lib/telegram-emojis"
 import { cn } from "@/lib/utils"
 
 export interface RichTextInputHandle {
-  insertEmoji: (emoji: TelegramEmoji) => void
+  insertEmoji: (char: string) => void
   focus: () => void
   clear: () => void
   setValue: (text: string) => void
@@ -96,7 +95,7 @@ export const RichTextInput = forwardRef<RichTextInputHandle, RichTextInputProps>
         onChange(text)
         adjustHeight()
       },
-      insertEmoji(emoji: TelegramEmoji) {
+      insertEmoji(char: string) {
         restoreSelection()
 
         const el = divRef.current
@@ -118,19 +117,9 @@ export const RichTextInput = forwardRef<RichTextInputHandle, RichTextInputProps>
 
         range.deleteContents()
 
-        const img = document.createElement("img")
-        img.src = emoji.src
-        img.alt = emoji.name
-        img.dataset.emojiName = emoji.name
-        img.dataset.emojiSrc = emoji.src
-        img.width = 24
-        img.height = 24
-        img.className =
-          "inline-block size-6 align-text-bottom mx-0.5 pointer-events-none select-none"
-        img.draggable = false
-
-        range.insertNode(img)
-        range.setStartAfter(img)
+        const textNode = document.createTextNode(char)
+        range.insertNode(textNode)
+        range.setStartAfter(textNode)
         range.collapse(true)
         sel?.removeAllRanges()
         sel?.addRange(range)

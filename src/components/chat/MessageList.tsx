@@ -47,7 +47,6 @@ export function MessageList({
   onReact,
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [showNewMessageToast, setShowNewMessageToast] = useState(false)
@@ -108,7 +107,7 @@ export function MessageList({
         setShowNewMessageToast(true)
       }
     }
-  }, [messages.length, isAtBottom, currentUserId, virtualizer])
+  }, [messages, messages.length, isAtBottom, currentUserId, virtualizer])
 
   // Load more when scrolling past the top
   const fetchNextPageStable = useCallback(() => fetchNextPage(), [fetchNextPage])
@@ -240,7 +239,9 @@ export function MessageList({
           const isSelf = message.senderId === currentUserId || message.senderId === "__self__"
 
           const isGrouped =
-            prevMessage?.senderId === message.senderId &&
+            prevMessage !== null &&
+            prevMessage.isDeleted !== "true" &&
+            prevMessage.senderId === message.senderId &&
             new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() <
               5 * 60 * 1000
 

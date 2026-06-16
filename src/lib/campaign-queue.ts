@@ -15,7 +15,8 @@ export function getCampaignQueue(): Queue | null {
   }
   if (connection && !_queue) {
     _queue = new Queue("campaign-delivery", {
-      connection: connection as unknown as import("ioredis").Redis,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      connection: connection as any,
     })
   }
   return _queue

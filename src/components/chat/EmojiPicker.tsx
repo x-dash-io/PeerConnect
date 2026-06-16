@@ -160,43 +160,13 @@ const EmojiButton = memo(function EmojiButton({
   emoji: TelegramEmoji
   onSelect: (emoji: TelegramEmoji) => void
 }) {
-  const [visible, setVisible] = useState(false)
-  const ref = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: "80px" },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
   return (
     <button
-      ref={ref}
       onClick={() => onSelect(emoji)}
-      className="flex items-center justify-center size-10 rounded-lg hover:bg-bg-muted active:scale-90 transition-all"
+      className="flex items-center justify-center size-10 rounded-lg hover:bg-bg-muted active:scale-90 transition-all text-2xl leading-none"
       title={emoji.name}
     >
-      {visible && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={emoji.src}
-          alt={emoji.name}
-          width={28}
-          height={28}
-          decoding="async"
-          className="size-7 object-contain"
-        />
-      )}
+      {emoji.char}
     </button>
   )
 })

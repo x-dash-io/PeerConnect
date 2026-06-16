@@ -25,7 +25,8 @@ export function startCampaignWorker(redisUrl: string): void {
       const result = await deliverCampaign(job.data)
       return result
     },
-    { connection: connection as unknown as import("ioredis").Redis, concurrency: 5 },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { connection: connection as any, concurrency: 5 },
   )
 
   _worker.on("error", (err) => {

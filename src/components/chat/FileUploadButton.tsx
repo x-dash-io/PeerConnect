@@ -2,7 +2,6 @@
 
 import { useRef, ChangeEvent } from "react"
 import { Paperclip } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { UPLOAD_MAX_SIZE_BYTES } from "@/lib/constants"
 import { toast } from "sonner"
 

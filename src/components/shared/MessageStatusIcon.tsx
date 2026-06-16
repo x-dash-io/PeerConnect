@@ -8,11 +8,11 @@ type MessageStatus = "sending" | "sent" | "delivered" | "read"
 
 interface MessageStatusIconProps {
   status: MessageStatus
-  variant?: "default" | "light"
+  variant?: "default" | "light" | "inline"
 }
 
 export function MessageStatusIcon({ status, variant = "default" }: MessageStatusIconProps) {
-  const isLight = variant === "light"
+  const isLight = variant === "light" || variant === "inline"
 
   const config = {
     sending: {

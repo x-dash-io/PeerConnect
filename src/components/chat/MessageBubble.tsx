@@ -12,6 +12,23 @@ import { VideoPlayer } from "./VideoPlayer"
 import { AudioPlayer } from "./AudioPlayer"
 import { MarkdownRenderer } from "./MarkdownRenderer"
 import { format } from "date-fns"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const COLLAPSED_CHAR_LIMIT = 400
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"]
@@ -42,11 +59,13 @@ export function MessageBubble({
   const [expanded, setExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content || "")
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const editInputRef = useRef<HTMLTextAreaElement>(null)
 
   const timestamp = format(new Date(message.createdAt), "HH:mm")
   const isLong = (message.content?.length ?? 0) > COLLAPSED_CHAR_LIMIT
   const isDeleted = message.isDeleted === "true"
+  const effectivelyGrouped = isGrouped && !isDeleted
   const messageStatus = message.status.toLowerCase() as "sending" | "sent" | "delivered" | "read"
 
   useEffect(() => {
@@ -161,7 +180,7 @@ export function MessageBubble({
       className={cn(
         "group flex w-full",
         isSelf ? "justify-end" : "justify-start",
-        isGrouped ? "mb-1" : "mb-4",
+        effectivelyGrouped ? "mb-1" : "mb-4",
         isHighlighted && "bg-indigo-500/5 rounded-lg -mx-2 px-2",
       )}
     >
@@ -173,16 +192,16 @@ export function MessageBubble({
         )}
       >
         {/* Avatar — received only, first in group */}
-        {!isSelf && !isGrouped && (
+        {!isSelf && !effectivelyGrouped && (
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-xs font-medium text-indigo-700 dark:text-indigo-300">
             {getInitials(message.senderName || "U")}
           </div>
         )}
-        {!isSelf && isGrouped && <div className="size-8 shrink-0" />}
+        {!isSelf && effectivelyGrouped && <div className="size-8 shrink-0" />}
 
         <div className="flex flex-col min-w-0 max-w-full">
           {/* Sender name — received only, first in group */}
-          {!isSelf && !isGrouped && (
+          {!isSelf && !effectivelyGrouped && (
             <span className="text-[10px] font-medium text-neutral-400 mb-0.5 ml-1">
               {message.senderName}
             </span>
@@ -196,10 +215,10 @@ export function MessageBubble({
                 isSelf
                   ? "bg-indigo-500 dark:bg-indigo-600 text-white rounded-2xl rounded-br-sm"
                   : "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-2xl rounded-tl-sm border border-neutral-200 dark:border-neutral-700",
-                isGrouped && isSelf && "rounded-br-sm rounded-tr-sm",
-                !isGrouped && isSelf && "rounded-br-sm",
-                isGrouped && !isSelf && "rounded-tl-sm rounded-bl-sm",
-                !isGrouped && !isSelf && "rounded-tl-sm",
+                effectivelyGrouped && isSelf && "rounded-br-sm rounded-tr-sm",
+                !effectivelyGrouped && isSelf && "rounded-br-sm",
+                effectivelyGrouped && !isSelf && "rounded-tl-sm rounded-bl-sm",
+                !effectivelyGrouped && !isSelf && "rounded-tl-sm",
                 isDeleted && "opacity-60",
               )}
             >
@@ -293,46 +312,72 @@ export function MessageBubble({
                       )}
                     </button>
                   )}
+
+                  {/* Timestamp + status — inside bubble */}
+                  <span
+                    className={cn(
+                      "float-right ml-3 mt-1 mb-[-2px] flex items-center gap-1",
+                      "select-none pointer-events-none",
+                    )}
+                  >
+                    {isSelf && !isDeleted && (
+                      <MessageStatusIcon status={messageStatus} variant="inline" />
+                    )}
+                    <span
+                      className={cn(
+                        "text-[10px] tabular-nums leading-none",
+                        isSelf ? "text-white/60" : "text-neutral-400",
+                      )}
+                    >
+                      {timestamp}
+                    </span>
+                  </span>
                 </>
               )}
             </div>
 
-            {/* Action buttons — on hover only */}
+            {/* Action trigger — appears on hover */}
             {!isEditing && !isDeleted && (
-              <div
-                className={cn(
-                  "absolute top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover/bubble:opacity-100 transition-opacity",
-                  isSelf ? "-left-14" : "-right-14",
-                )}
-              >
-                {onReply && (
-                  <button
-                    onClick={() => onReply(message)}
-                    className="size-7 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center justify-center transition-colors"
-                  >
-                    <Reply className="size-3.5" />
-                  </button>
-                )}
-                {isSelf && onEdit && (
-                  <button
-                    onClick={() => {
-                      setEditContent(message.content || "")
-                      setIsEditing(true)
-                    }}
-                    className="size-7 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center justify-center transition-colors"
-                  >
-                    <Pencil className="size-3" />
-                  </button>
-                )}
-                {isSelf && onDelete && (
-                  <button
-                    onClick={() => onDelete(message.id)}
-                    className="size-7 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-colors"
-                  >
-                    <Trash2 className="size-3" />
-                  </button>
-                )}
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={cn(
+                    "absolute top-1 opacity-0 group-hover/bubble:opacity-100",
+                    "transition-opacity size-6 rounded-full flex items-center",
+                    "justify-center bg-neutral-100 dark:bg-neutral-700",
+                    "text-neutral-500 hover:text-neutral-800 shadow-sm",
+                    isSelf ? "left-1" : "right-1",
+                  )}
+                >
+                  <ChevronDown className="size-3.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={isSelf ? "start" : "end"} className="w-44 rounded-xl">
+                  {onReply && (
+                    <DropdownMenuItem className="gap-2 text-sm" onClick={() => onReply(message)}>
+                      <Reply className="size-4" /> Reply
+                    </DropdownMenuItem>
+                  )}
+                  {isSelf && onEdit && (
+                    <DropdownMenuItem
+                      className="gap-2 text-sm"
+                      onClick={() => {
+                        setEditContent(message.content || "")
+                        setIsEditing(true)
+                      }}
+                    >
+                      <Pencil className="size-4" /> Edit
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  {isSelf && onDelete && (
+                    <DropdownMenuItem
+                      className="gap-2 text-sm text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950/30"
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >
+                      <Trash2 className="size-4" /> Delete
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
@@ -368,19 +413,32 @@ export function MessageBubble({
           {message.editedAt && !isDeleted && (
             <span className="text-[10px] text-neutral-400 italic mt-0.5">Edited</span>
           )}
-
-          {/* Timestamp + status — below bubble */}
-          <div
-            className={cn(
-              "flex items-center gap-1 mt-0.5",
-              isSelf ? "justify-end" : "justify-start",
-            )}
-          >
-            {isSelf && !isDeleted && <MessageStatusIcon status={messageStatus} variant="default" />}
-            <span className="text-[10px] text-neutral-400 tabular-nums">{timestamp}</span>
-          </div>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="max-w-sm rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Delete message?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-neutral-500">
+              This message will be permanently deleted and cannot be recovered.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="rounded-xl h-9 text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDelete?.(message.id)
+                setShowDeleteConfirm(false)
+              }}
+              className="rounded-xl h-9 text-sm bg-red-500 hover:bg-red-600 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }

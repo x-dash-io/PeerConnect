@@ -158,7 +158,7 @@ export function MessageComposer({
   )
 
   const handleEmojiSelect = useCallback((emoji: TelegramEmoji) => {
-    richInputRef.current?.insertEmoji(emoji)
+    richInputRef.current?.insertEmoji(emoji.char)
     setIsEmojiOpen(false)
   }, [])
 
