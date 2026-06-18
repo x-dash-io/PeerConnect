@@ -9,7 +9,7 @@ import { emojiCategories, type TelegramEmoji } from "@/lib/telegram-emojis"
 interface EmojiPickerProps {
   open: boolean
   onClose: () => void
-  onSelect: (emoji: TelegramEmoji) => void
+  onSelect: (_emoji: TelegramEmoji) => void
 }
 
 export function EmojiPicker({ open, onClose, onSelect }: EmojiPickerProps) {
