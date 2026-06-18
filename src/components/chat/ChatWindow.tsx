@@ -6,6 +6,7 @@ import { useToggleReaction } from "@/hooks/useMessageReactions"
 import { ChatHeader } from "./ChatHeader"
 import { MessageList } from "./MessageList"
 import { MessageComposer } from "./MessageComposer"
+import { ForwardPicker } from "./ForwardPicker"
 import { Message, UserProfile, ReplyPreview } from "@/types"
 import { useConversationRoom } from "@/hooks/useConversationRoom"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
@@ -25,6 +26,7 @@ export function ChatWindow({
   lastReadAt,
 }: ChatWindowProps) {
   const [replyTo, setReplyTo] = useState<ReplyPreview | null>(null)
+  const [forwardMessage, setForwardMessage] = useState<Message | null>(null)
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useMessages(conversationId)
@@ -65,11 +67,20 @@ export function ChatWindow({
           onReply={(msg) =>
             setReplyTo({ id: msg.id, content: msg.content, senderName: msg.senderName ?? null })
           }
+          onForward={(msg) => setForwardMessage(msg)}
           onEditMessage={(messageId, content) => editMessage({ messageId, content })}
           onDeleteMessage={(messageId, mode) =>
             mode === "everyone" ? deleteMessage(messageId) : hideMessage(messageId)
           }
           onReact={(messageId, emoji) => toggleReaction({ messageId, emoji })}
+        />
+
+        <ForwardPicker
+          open={forwardMessage !== null}
+          onOpenChange={(open) => {
+            if (!open) setForwardMessage(null)
+          }}
+          message={forwardMessage}
         />
       </div>
 

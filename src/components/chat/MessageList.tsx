@@ -22,6 +22,7 @@ interface MessageListProps {
   isLoading: boolean
   isRecipientTyping?: boolean
   onReply?: (message: Message) => void
+  onForward?: (message: Message) => void
   onEditMessage?: (messageId: string, content: string) => void
   onDeleteMessage?: (messageId: string, mode: "me" | "everyone") => void
   onReact?: (messageId: string, emoji: string) => void
@@ -43,6 +44,7 @@ export function MessageList({
   isLoading,
   isRecipientTyping,
   onReply,
+  onForward,
   onEditMessage,
   onDeleteMessage,
   onReact,
@@ -328,6 +330,7 @@ export function MessageList({
                 isSelf={isSelf}
                 isGrouped={isGrouped}
                 onReply={onReply}
+                onForward={onForward}
                 onEdit={onEditMessage}
                 onDelete={onDeleteMessage}
                 onReact={onReact}

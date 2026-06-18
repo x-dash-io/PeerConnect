@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, ReactNode } from "react"
+import { useState, useRef, ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
 interface CustomTooltipProps {

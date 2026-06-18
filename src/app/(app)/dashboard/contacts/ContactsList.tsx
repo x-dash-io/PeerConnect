@@ -19,7 +19,7 @@ function ContactCard({
   isCreating,
 }: {
   contact: UserProfile
-  onMessage: (contact: UserProfile) => void
+  onMessage: (c: UserProfile) => void
   isCreating: boolean
 }) {
   const { status } = usePresence(contact.id)

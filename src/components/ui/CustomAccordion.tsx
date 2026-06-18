@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode } from "react"
+import React, { ReactNode } from "react"
 import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -59,9 +59,9 @@ export function CustomAccordion({ children, className, onValueChange }: CustomAc
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           return React.cloneElement(child, {
-            ...child.props,
+            ...(child.props as Record<string, unknown>),
             onOpenChange: handleValueChange,
-          })
+          } as Record<string, unknown>)
         }
         return child
       })}

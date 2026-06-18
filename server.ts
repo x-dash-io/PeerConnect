@@ -73,7 +73,7 @@ app.prepare().then(async () => {
       await Promise.all([pubClient.connect(), subClient.connect()])
       io.adapter(createAdapter(pubClient, subClient))
       console.log("[Socket.io] Redis adapter connected")
-    } catch (err) {
+    } catch {
       console.error("[Socket.io] Redis adapter failed to connect. Falling back to in-memory.")
     }
   }

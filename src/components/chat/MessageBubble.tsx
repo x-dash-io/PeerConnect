@@ -2,13 +2,25 @@
 
 import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Reply, ChevronDown, ChevronUp, Pencil, Trash2, Trash, X, Check, Plus } from "lucide-react"
+import {
+  Reply,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Trash2,
+  Trash,
+  X,
+  Check,
+  Plus,
+  Forward,
+} from "lucide-react"
 import { cn, getInitials } from "@/lib/utils"
 import { Message } from "@/types"
 import { MessageStatusIcon } from "@/components/shared/MessageStatusIcon"
 import { useChatPreferences } from "@/providers/ChatPreferencesProvider"
 import { BUBBLE_THEMES } from "@/types"
 import { FileAttachmentCard } from "./FileAttachmentCard"
+import { DocumentPreview } from "./DocumentPreview"
 import { ImagePreview } from "./ImagePreview"
 import { VideoPlayer } from "./VideoPlayer"
 import { AudioPlayer } from "./AudioPlayer"
@@ -40,6 +52,7 @@ interface MessageBubbleProps {
   isSelf: boolean
   isGrouped: boolean
   onReply?: (message: Message) => void
+  onForward?: (message: Message) => void
   onEdit?: (messageId: string, content: string) => void
   onDelete?: (messageId: string, mode: "me" | "everyone") => void
   onReact?: (messageId: string, emoji: string) => void
@@ -52,6 +65,7 @@ export function MessageBubble({
   isSelf,
   isGrouped,
   onReply,
+  onForward,
   onEdit,
   onDelete,
   onReact,
@@ -192,14 +206,19 @@ export function MessageBubble({
           </div>
         )
 
-      case "FILE":
-        return message.file ? (
-          <FileAttachmentCard file={message.file} isSelf={isSelf} />
-        ) : (
-          <div className="whitespace-pre-wrap break-words">
-            {renderTextContent(message.content)}
-          </div>
-        )
+      case "FILE": {
+        if (!message.file) {
+          return (
+            <div className="whitespace-pre-wrap break-words">
+              {renderTextContent(message.content)}
+            </div>
+          )
+        }
+        const docPreview = message.file ? (
+          <DocumentPreview file={message.file} isSelf={isSelf} messageId={message.id} />
+        ) : null
+        return docPreview ?? <FileAttachmentCard file={message.file} isSelf={isSelf} />
+      }
 
       case "AUDIO":
         return message.file ? (
@@ -280,6 +299,22 @@ export function MessageBubble({
                 "hover:shadow-md",
               )}
             >
+              {/* Forwarded badge */}
+              {(message.metadata as { forwardedFrom?: { senderName?: string } } | null)
+                ?.forwardedFrom && (
+                <div
+                  className={cn(
+                    "text-[10px] font-semibold mb-2 flex items-center gap-1",
+                    isSelf ? "text-white/70" : "text-indigo-500",
+                  )}
+                >
+                  <Forward className="size-3" />
+                  Forwarded from{" "}
+                  {(message.metadata as { forwardedFrom: { senderName?: string } }).forwardedFrom
+                    .senderName || "Unknown"}
+                </div>
+              )}
+
               {/* Reply preview */}
               {message.replyTo && (
                 <button
@@ -426,6 +461,11 @@ export function MessageBubble({
                   {onReply && (
                     <DropdownMenuItem className="gap-2 text-sm" onClick={() => onReply(message)}>
                       <Reply className="size-4" /> Reply
+                    </DropdownMenuItem>
+                  )}
+                  {onForward && (
+                    <DropdownMenuItem className="gap-2 text-sm" onClick={() => onForward(message)}>
+                      <Forward className="size-4" /> Forward
                     </DropdownMenuItem>
                   )}
                   {isSelf && onEdit && (

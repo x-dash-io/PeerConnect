@@ -28,25 +28,30 @@ export function ThemeToggle({ variant = "icon", className }: ThemeToggleProps) {
           className,
         )}
       >
-        {[
-          { value: "light", icon: Sun, label: "Light" },
-          { value: "dark", icon: Moon, label: "Dark" },
-          { value: "system", icon: Monitor, label: "System" },
-        ].map(({ value, icon: Icon, label }) => (
-          <button
-            key={value}
-            onClick={() => setTheme(value)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
-              theme === value
-                ? "bg-brand-subtle text-brand shadow-sm"
-                : "text-text-medium hover:text-text-high hover:bg-bg-muted",
-            )}
-          >
-            <Icon className="size-3.5" />
-            {label}
-          </button>
-        ))}
+        {(["light", "dark", "system"] as const).map((value) => {
+          const config = {
+            light: { icon: Sun, label: "Light" },
+            dark: { icon: Moon, label: "Dark" },
+            system: { icon: Monitor, label: "System" },
+          }[value]
+          const Icon = config.icon
+          const label = config.label
+          return (
+            <button
+              key={value}
+              onClick={() => setTheme(value)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                theme === value
+                  ? "bg-brand-subtle text-brand shadow-sm"
+                  : "text-text-medium hover:text-text-high hover:bg-bg-muted",
+              )}
+            >
+              <Icon className="size-3.5" />
+              {label}
+            </button>
+          )
+        })}
       </div>
     )
   }

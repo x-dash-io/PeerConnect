@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, ReactNode } from "react"
+import { useEffect, useRef, ReactNode } from "react"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
