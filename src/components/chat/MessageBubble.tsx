@@ -199,7 +199,7 @@ export function MessageBubble({
 
       case "VIDEO":
         return message.file ? (
-          <VideoPlayer file={message.file} isSelf={isSelf} />
+          <VideoPlayer file={message.file} />
         ) : (
           <div className="whitespace-pre-wrap break-words">
             {renderTextContent(message.content)}

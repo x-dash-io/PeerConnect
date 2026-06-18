@@ -79,7 +79,7 @@ export async function uploadFile(
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const etag = await uploadPartXHR(signedUrl, chunk, (loaded, total) => {
+        const etag = await uploadPartXHR(signedUrl, chunk, (loaded) => {
           const totalLoaded = bytesBeforePart + loaded
           onProgress?.({
             loaded: totalLoaded,

@@ -67,6 +67,7 @@ export function MessageList({
     index,
   }))
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: rowData.length + (isRecipientTyping ? 1 : 0),
     getScrollElement: () => containerRef.current,

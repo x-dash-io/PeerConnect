@@ -18,7 +18,6 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 interface VideoPlayerProps {
   file: FileAttachment
-  isSelf: boolean
 }
 
 const rangeThumbStyles = `
@@ -57,7 +56,7 @@ input[type="range"].range-thumb-sm::-moz-range-thumb {
 }
 `
 
-export function VideoPlayer({ file, isSelf }: VideoPlayerProps) {
+export function VideoPlayer({ file }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
