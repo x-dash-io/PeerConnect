@@ -124,8 +124,8 @@ export function SettingsForm({
       })
       if (!res.ok) throw new Error("Failed to save avatar")
       toast.success("Avatar updated")
-    } catch {
-      toast.error("Failed to upload avatar")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload avatar")
     } finally {
       setSavingAvatar(false)
     }
