@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic"
+"use client"
 
 import { Logo } from "@/components/shared/Logo"
 import { motion, AnimatePresence } from "framer-motion"
