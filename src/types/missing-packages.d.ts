@@ -6,7 +6,8 @@ declare module "mammoth" {
     messages: Array<{ type: string; message: string }>
   }
   export interface ConvertToHtmlOptions {
-    arrayBuffer: ArrayBuffer
+    arrayBuffer?: ArrayBuffer
+    buffer?: Buffer
     styleMap?: string
   }
   export function convertToHtml(options: ConvertToHtmlOptions): Promise<MammothResult>

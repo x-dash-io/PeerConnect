@@ -12,11 +12,13 @@ async function extractText(buffer: Buffer, mimeType: string, filename: string): 
   const ext = filename.split(".").pop()?.toLowerCase()
 
   if (mimeType === "application/pdf" || ext === "pdf") {
-    const pdfjs = await import("pdfjs-dist")
-    const doc = await pdfjs.getDocument({ data: new Uint8Array(buffer.buffer) }).promise
+    // pdfjs-dist v6+ uses different API
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs")
+    // Set up worker for pdfjs-dist
+    const pdfDocument = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise
     let text = ""
-    for (let i = 1; i <= doc.numPages; i++) {
-      const page = await doc.getPage(i)
+    for (let i = 1; i <= pdfDocument.numPages; i++) {
+      const page = await pdfDocument.getPage(i)
       const content = await page.getTextContent()
       text += content.items.map((item: { str: string }) => item.str).join(" ") + "\n"
     }
@@ -31,7 +33,7 @@ async function extractText(buffer: Buffer, mimeType: string, filename: string): 
   ) {
     const mammoth = await import("mammoth")
     const { value: html } = await mammoth.convertToHtml({
-      arrayBuffer: buffer.buffer as ArrayBuffer,
+      buffer,
     })
     // Strip HTML tags
     return html

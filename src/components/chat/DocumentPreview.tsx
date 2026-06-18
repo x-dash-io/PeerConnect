@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import {
   FileText,
   Sparkles,
@@ -26,6 +26,8 @@ interface DocumentPreviewProps {
 
 type DocType = "pdf" | "docx" | "xlsx" | "text" | "other"
 type PreviewState = "idle" | "loading" | "ready" | "error"
+
+const A4_PREVIEW_HEIGHT = 1123
 
 function getDocType(mimeType: string, filename: string): DocType {
   if (mimeType === "application/pdf") return "pdf"
@@ -66,6 +68,8 @@ function DocumentInner({
   const [summary, setSummary] = useState<string | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summaryOpen, setSummaryOpen] = useState(false)
+  const [docPageInfo, setDocPageInfo] = useState({ current: 1, total: 1 })
+  const docPreviewRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     fetch(`/api/uploads/download?key=${encodeURIComponent(file.s3Key)}`)
@@ -73,6 +77,27 @@ function DocumentInner({
       .then(({ url }) => setDownloadUrl(url))
       .catch(console.error)
   }, [file.s3Key])
+
+  const updateDocPageInfo = useCallback(() => {
+    const preview = docPreviewRef.current
+    if (!preview) return
+
+    const total = Math.max(1, Math.ceil(preview.scrollHeight / A4_PREVIEW_HEIGHT))
+    const current = Math.min(
+      total,
+      Math.max(1, Math.floor(preview.scrollTop / A4_PREVIEW_HEIGHT) + 1),
+    )
+    setDocPageInfo((previous) =>
+      previous.current === current && previous.total === total ? previous : { current, total },
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!previewOpen || previewState !== "ready" || docType !== "docx") return
+
+    const frame = window.requestAnimationFrame(updateDocPageInfo)
+    return () => window.cancelAnimationFrame(frame)
+  }, [docType, previewOpen, previewState, previewContent, updateDocPageInfo])
 
   const handleOpenPreview = useCallback(async () => {
     setPreviewOpen(true)
@@ -100,11 +125,18 @@ function DocumentInner({
       if (docType === "docx") {
         const arrayBuf = await blob.arrayBuffer()
         const { value: html } = await mammoth.convertToHtml({ arrayBuffer: arrayBuf })
+        setDocPageInfo({ current: 1, total: 1 })
         setPreviewContent(
           <div
-            className="prose prose-sm dark:prose-invert max-w-none p-4 max-h-[80vh] overflow-y-auto text-text-high dark:text-text-high"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />,
+            ref={docPreviewRef}
+            onScroll={updateDocPageInfo}
+            className="h-full overflow-auto bg-[#eef0f3] px-4 py-6 dark:bg-zinc-950 sm:px-8 sm:py-10"
+          >
+            <div
+              className="mx-auto min-h-[1123px] w-[794px] max-w-none overflow-visible bg-white px-[72px] py-[72px] font-serif text-[12pt] leading-[1.5] text-zinc-950 shadow-md ring-1 ring-black/10 [&_*]:box-border [&_a]:text-brand [&_blockquote]:my-4 [&_blockquote]:border-l-4 [&_blockquote]:border-zinc-300 [&_blockquote]:pl-4 [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:text-[22pt] [&_h1]:font-bold [&_h1]:leading-tight [&_h2]:mb-3 [&_h2]:mt-5 [&_h2]:text-[18pt] [&_h2]:font-bold [&_h2]:leading-tight [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-[15pt] [&_h3]:font-bold [&_h3]:leading-snug [&_img]:my-3 [&_img]:inline-block [&_img]:h-auto [&_img]:max-h-[820px] [&_img]:max-w-full [&_li]:my-1 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-8 [&_p]:my-2 [&_p]:min-h-[1.5em] [&_strong]:font-bold [&_table]:my-4 [&_table]:w-auto [&_table]:max-w-none [&_table]:border-collapse [&_table]:text-left [&_table]:text-[10.5pt] [&_table]:leading-snug [&_td]:border [&_td]:border-zinc-400 [&_td]:px-2 [&_td]:py-1.5 [&_td]:align-top [&_td]:text-zinc-950 [&_th]:border [&_th]:border-zinc-400 [&_th]:bg-zinc-100 [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-bold [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-8"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>,
         )
         setPreviewState("ready")
       } else if (docType === "xlsx") {
@@ -143,7 +175,7 @@ function DocumentInner({
     } catch {
       setPreviewState("error")
     }
-  }, [downloadUrl, docType, previewState])
+  }, [downloadUrl, docType, previewState, updateDocPageInfo])
 
   const handleSummarize = useCallback(async () => {
     if (summary) {
@@ -171,7 +203,7 @@ function DocumentInner({
           if (errorData.error && typeof errorData.error === "string") {
             errorMessage = errorData.error
           }
-        } catch (_parseError) {
+        } catch {
           // If parsing fails, try to get the raw text
           try {
             const text = await res.text()
@@ -265,7 +297,7 @@ function DocumentInner({
       {/* Preview dialog - redesigned with design tokens */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent
-          className="max-w-5xl bg-bg-surface border-border-subtle p-1 sm:p-2 max-h-[90vh] overflow-hidden flex flex-col"
+          className="h-[92vh] max-h-[92vh] w-[calc(100vw-12px)] max-w-[1400px] sm:max-w-[1400px] gap-0 overflow-hidden border-border-subtle bg-bg-surface p-0 flex flex-col"
           showCloseButton={false}
         >
           <DialogTitle className="sr-only">{file.filename}</DialogTitle>
@@ -275,6 +307,11 @@ function DocumentInner({
             <div className="flex items-center gap-2 min-w-0">
               <FileText className="size-4 text-brand shrink-0" />
               <span className="text-sm font-medium text-text-high truncate">{file.filename}</span>
+              {docType === "docx" && previewState === "ready" && (
+                <span className="hidden shrink-0 rounded-md border border-border-subtle bg-bg-muted px-2 py-1 text-[11px] font-medium text-text-medium sm:inline-flex">
+                  Page {docPageInfo.current} of {docPageInfo.total}
+                </span>
+              )}
             </div>
             <button
               onClick={() => setPreviewOpen(false)}
@@ -286,7 +323,7 @@ function DocumentInner({
           </div>
 
           {/* Content - improved visibility */}
-          <div className="flex-1 overflow-hidden bg-bg-deep rounded-lg m-1">
+          <div className="min-h-0 flex-1 overflow-hidden bg-bg-deep">
             {previewState === "loading" && (
               <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center gap-3">

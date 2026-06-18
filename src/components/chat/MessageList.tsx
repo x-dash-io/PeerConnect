@@ -49,6 +49,8 @@ export function MessageList({
   onDeleteMessage,
   onReact,
 }: MessageListProps) {
+  "use no memo"
+
   const containerRef = useRef<HTMLDivElement>(null)
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)

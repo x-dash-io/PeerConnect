@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { signIn } from "next-auth/react"
@@ -46,13 +46,13 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
   })
 
-  const passwordValue = watch("password", "")
+  const passwordValue = useWatch({ control, name: "password", defaultValue: "" })
   const strength = getPasswordStrength(passwordValue)
 
   async function onSubmit(data: RegisterValues) {
