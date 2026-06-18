@@ -7,7 +7,7 @@ import { CampaignsDashboard } from "./CampaignsDashboard"
 
 export default async function CampaignsPage() {
   const session = await auth()
-  if (!session?.user?.id) redirect("/login")
+  if (!session?.user?.id) redirect("/api/auth/clear-session")
 
   const userCampaigns = await db
     .select()

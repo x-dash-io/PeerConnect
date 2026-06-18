@@ -206,6 +206,19 @@ app.prepare().then(async () => {
           .set({ status, updatedAt: new Date() })
           .where(eq(messages.id, messageId))
 
+        const userId = socket.data.userId as string | undefined
+        if (status === "READ" && userId) {
+          await db
+            .update(conversationParticipants)
+            .set({ lastReadAt: new Date() })
+            .where(
+              and(
+                eq(conversationParticipants.conversationId, conversationId),
+                eq(conversationParticipants.userId, userId),
+              ),
+            )
+        }
+
         // Notify other participants in the conversation
         socket.to(`conversation:${conversationId}`).emit("message:status", { messageId, status })
       },

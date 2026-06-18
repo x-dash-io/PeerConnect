@@ -16,6 +16,7 @@ if (!connectionString) {
 const pool = new Pool({
   connectionString,
   max: process.env.NODE_ENV === "production" ? 10 : 1,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
 })
 
 // Error handling for the pool

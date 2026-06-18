@@ -119,6 +119,7 @@ export async function GET(req: NextRequest) {
       and(
         inArray(messages.conversationId, convIds),
         ne(messages.senderId, currentUserId),
+        ne(messages.status, "READ"),
         gt(
           messages.createdAt,
           sql`COALESCE(

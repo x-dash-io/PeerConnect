@@ -3,7 +3,7 @@
 import { useEffect, useCallback } from "react"
 import { useSocket } from "@/providers/SocketProvider"
 import { useQueryClient } from "@tanstack/react-query"
-import { Message, MessageReaction, MessageStatus } from "@/types"
+import { Message, MessageReaction, MessageStatus, Conversation } from "@/types"
 
 interface MessagesPage {
   messages: Message[]
@@ -52,7 +52,10 @@ export function useRealtimeMessages(conversationId: string, currentUserId: strin
       if (message.conversationId !== conversationId) return
       if (message.senderId === currentUserId) return
 
-      if (document.hasFocus()) {
+      const isFocused = document.hasFocus()
+      const statusMessage = isFocused ? { ...message, status: "READ" as const } : message
+
+      if (isFocused) {
         socket?.emit("message:status", {
           messageId: message.id,
           status: "READ" as MessageStatus,
@@ -66,8 +69,24 @@ export function useRealtimeMessages(conversationId: string, currentUserId: strin
       }
 
       queryClient.setQueryData(["messages", conversationId], (old: MessagesCache | undefined) =>
-        addMessageToCache(old, message),
+        addMessageToCache(old, statusMessage),
       )
+
+      // Optimistically update the conversations list cache to prevent race conditions
+      queryClient.setQueryData(["conversations"], (old: Conversation[] | undefined) => {
+        if (!old) return old
+        return old.map((conv) => {
+          if (conv.id === message.conversationId) {
+            return {
+              ...conv,
+              lastMessage: statusMessage,
+              unreadCount: isFocused ? 0 : (conv.unreadCount || 0) + 1,
+            }
+          }
+          return conv
+        })
+      })
+
       queryClient.invalidateQueries({ queryKey: ["conversations"] })
     },
     [conversationId, currentUserId, socket, queryClient],

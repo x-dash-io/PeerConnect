@@ -12,7 +12,7 @@ export default async function ConversationPage({
   params: Promise<{ conversationId: string }>
 }) {
   const session = await auth()
-  if (!session?.user?.id) redirect("/login")
+  if (!session?.user?.id) redirect("/api/auth/clear-session")
 
   const { conversationId } = await params
   const userId = session.user.id

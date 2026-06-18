@@ -12,7 +12,7 @@ import { OfflineBanner } from "@/components/shared/OfflineBanner"
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
-  if (!session?.user?.id) redirect("/login")
+  if (!session?.user?.id) redirect("/api/auth/clear-session")
 
   return (
     <SessionProvider>

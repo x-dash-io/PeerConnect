@@ -8,7 +8,7 @@ import { UserProfile } from "@/types"
 
 export default async function ContactsPage() {
   const session = await auth()
-  if (!session?.user?.id) redirect("/login")
+  if (!session?.user?.id) redirect("/api/auth/clear-session")
 
   // Get conversation IDs the user belongs to
   const userConvos = await db

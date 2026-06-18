@@ -8,7 +8,7 @@ import { SettingsForm } from "./SettingsForm"
 
 export default async function SettingsPage() {
   const session = await auth()
-  if (!session?.user?.id) redirect("/login")
+  if (!session?.user?.id) redirect("/api/auth/clear-session")
 
   const [user] = await db
     .select({
@@ -22,7 +22,7 @@ export default async function SettingsPage() {
     .from(users)
     .where(eq(users.id, session.user.id))
 
-  if (!user) redirect("/login")
+  if (!user) redirect("/api/auth/clear-session")
 
   const initialPreferences = { fontSize: "medium", bubbleTheme: "indigo" }
 
