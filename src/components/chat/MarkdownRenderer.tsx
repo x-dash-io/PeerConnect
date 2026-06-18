@@ -10,8 +10,26 @@ interface MarkdownRendererProps {
   isSelf?: boolean
 }
 
+function sanitizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url)
+    if (["http:", "https:", "mailto:"].includes(parsed.protocol)) return url
+  } catch {}
+  return "#"
+}
+
 export function MarkdownRenderer({ content, isSelf }: MarkdownRendererProps) {
   const components: Components = {
+    a: ({ href, children }) => (
+      <a
+        href={sanitizeUrl(href ?? "")}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2"
+      >
+        {children}
+      </a>
+    ),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     code: ({ inline, children, ...props }: any) =>
       inline ? (
@@ -54,7 +72,7 @@ export function MarkdownRenderer({ content, isSelf }: MarkdownRendererProps) {
         return (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={src}
+            src={sanitizeUrl(src)}
             alt={alt ?? "emoji"}
             width={24}
             height={24}
@@ -65,7 +83,12 @@ export function MarkdownRenderer({ content, isSelf }: MarkdownRendererProps) {
       }
       return (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={alt ?? ""} className="max-w-full rounded-lg my-1" loading="lazy" />
+        <img
+          src={sanitizeUrl(src)}
+          alt={alt ?? ""}
+          className="max-w-full rounded-lg my-1"
+          loading="lazy"
+        />
       )
     },
   }

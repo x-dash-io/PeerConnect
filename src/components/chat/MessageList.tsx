@@ -23,7 +23,7 @@ interface MessageListProps {
   isRecipientTyping?: boolean
   onReply?: (message: Message) => void
   onEditMessage?: (messageId: string, content: string) => void
-  onDeleteMessage?: (messageId: string) => void
+  onDeleteMessage?: (messageId: string, mode: "me" | "everyone") => void
   onReact?: (messageId: string, emoji: string) => void
 }
 
@@ -54,6 +54,8 @@ export function MessageList({
   const initialScrollDone = useRef(false)
   const lastKnownCount = useRef(messages.length)
   const scrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
 
   const rowData: RowData[] = messages.map((message, index) => ({
     type: "message" as const,
@@ -67,7 +69,7 @@ export function MessageList({
     estimateSize: (index: number) => {
       if (index >= rowData.length) return 40
       const msg = rowData[index].message
-      if (msg.isDeleted === "true") return 28
+      if (msg.isDeleted === true) return 72
       if (msg.type === "IMAGE" || msg.type === "VIDEO") return 220
       if (msg.file) return 150
       if (msg.replyTo) return 120
@@ -78,7 +80,7 @@ export function MessageList({
     measureElement: (element) => element.getBoundingClientRect().height,
   })
 
-  const { wallpaper, fontSize } = useChatPreferences()
+  const { fontSize } = useChatPreferences()
 
   const virtualItems = virtualizer.getVirtualItems()
 
@@ -160,7 +162,7 @@ export function MessageList({
         }
         // Will retry once more data loads
         scrollIntervalRef.current = setInterval(() => {
-          const newIdx = messages.findIndex((m) => m.id === messageId)
+          const newIdx = messagesRef.current.findIndex((m) => m.id === messageId)
           if (newIdx >= 0) {
             if (scrollIntervalRef.current) {
               clearInterval(scrollIntervalRef.current)
@@ -190,18 +192,7 @@ export function MessageList({
 
   if (isLoading && messages.length === 0) {
     return (
-      <div
-        className="flex flex-col h-full justify-end px-6 py-4 gap-1 bg-neutral-50 dark:bg-neutral-950"
-        style={
-          wallpaper
-            ? {
-                backgroundImage: `url(${wallpaper})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }
-            : undefined
-        }
-      >
+      <div className="flex flex-col h-full justify-end px-6 py-4 gap-1 bg-bg-surface/70 dark:bg-bg-deep/70">
         <SkeletonMessage isSelf={false} />
         <SkeletonMessage isSelf={false} />
         <SkeletonMessage isSelf={true} />
@@ -216,18 +207,7 @@ export function MessageList({
 
   if (!isLoading && messages.length === 0) {
     return (
-      <div
-        className="flex h-full flex-col items-center justify-center px-4 text-center bg-neutral-50/80 dark:bg-neutral-950/80"
-        style={
-          wallpaper
-            ? {
-                backgroundImage: `url(${wallpaper})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }
-            : undefined
-        }
-      >
+      <div className="flex h-full flex-col items-center justify-center px-4 text-center bg-bg-surface/60 dark:bg-bg-deep/60">
         <svg
           viewBox="0 0 56 56"
           fill="none"
@@ -251,16 +231,7 @@ export function MessageList({
     <div
       ref={containerRef}
       data-font-size={fontSize}
-      className="flex flex-col h-full overflow-y-auto px-6 py-4 scroll-smooth scrollbar-hide bg-neutral-50 dark:bg-neutral-950"
-      style={
-        wallpaper
-          ? {
-              backgroundImage: `url(${wallpaper})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }
-          : undefined
-      }
+      className="flex flex-col h-full overflow-y-auto px-6 py-4 scroll-smooth scrollbar-hide bg-bg-surface/70 dark:bg-bg-deep/70"
     >
       {isFetchingNextPage && (
         <div className="flex justify-center py-4">
@@ -293,6 +264,7 @@ export function MessageList({
                 <AnimatePresence>
                   {isRecipientTyping && (
                     <motion.div
+                      key="typing-indicator"
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 6 }}
@@ -313,7 +285,7 @@ export function MessageList({
 
           const isGrouped =
             prevMessage !== null &&
-            prevMessage.isDeleted !== "true" &&
+            prevMessage.isDeleted === message.isDeleted &&
             prevMessage.senderId === message.senderId &&
             new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() <
               5 * 60 * 1000
@@ -367,6 +339,11 @@ export function MessageList({
         })}
       </div>
 
+      {/* Live region for accessibility */}
+      <div aria-live="polite" className="sr-only">
+        {showNewMessageToast && "New message received"}
+      </div>
+
       {/* Floating New Message Indicator */}
       <AnimatePresence>
         {showNewMessageToast && (
@@ -378,7 +355,7 @@ export function MessageList({
               virtualizer.scrollToIndex(messages.length - 1, { align: "end", behavior: "smooth" })
               setShowNewMessageToast(false)
             }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500 text-white shadow-sm hover:bg-indigo-600 transition-colors z-50 animate-bounce-once"
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500 text-white shadow-sm hover:bg-indigo-600 transition-all duration-200 z-50 animate-bounce-once"
           >
             <MessageCircle className="size-4" />
             <span className="text-xs font-bold">New Message</span>

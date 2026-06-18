@@ -43,20 +43,6 @@ function updateMessageInCache(
   }
 }
 
-function removeMessageFromCache(
-  old: MessagesCache | undefined,
-  messageId: string,
-): MessagesCache | undefined {
-  if (!old) return old
-  return {
-    ...old,
-    pages: old.pages.map((page) => ({
-      ...page,
-      messages: page.messages.filter((m) => m.id !== messageId),
-    })),
-  }
-}
-
 export function useRealtimeMessages(conversationId: string, currentUserId: string) {
   const socket = useSocket()
   const queryClient = useQueryClient()
@@ -82,6 +68,7 @@ export function useRealtimeMessages(conversationId: string, currentUserId: strin
       queryClient.setQueryData(["messages", conversationId], (old: MessagesCache | undefined) =>
         addMessageToCache(old, message),
       )
+      queryClient.invalidateQueries({ queryKey: ["conversations"] })
     },
     [conversationId, currentUserId, socket, queryClient],
   )
@@ -112,7 +99,7 @@ export function useRealtimeMessages(conversationId: string, currentUserId: strin
     ({ conversationId: cId, messageId }: { conversationId: string; messageId: string }) => {
       if (cId !== conversationId) return
       queryClient.setQueryData(["messages", conversationId], (old: MessagesCache | undefined) =>
-        updateMessageInCache(old, messageId, { content: null, isDeleted: "true" }),
+        updateMessageInCache(old, messageId, { content: null, isDeleted: true }),
       )
     },
     [conversationId, queryClient],

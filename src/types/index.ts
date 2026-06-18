@@ -4,7 +4,6 @@ export type BubbleTheme = "indigo" | "emerald" | "violet" | "rose" | "amber" | "
 export interface ChatPreferences {
   fontSize: FontSize
   bubbleTheme: BubbleTheme
-  wallpaper: string | null
 }
 
 export const BUBBLE_THEMES: Record<
@@ -99,7 +98,7 @@ export interface Message {
   file?: FileAttachment
   metadata?: Record<string, unknown> | null
   editedAt?: string | null
-  isDeleted?: string
+  isDeleted?: boolean
   reactions?: MessageReaction[]
   createdAt: string
   _tempId?: string

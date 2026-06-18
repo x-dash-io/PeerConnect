@@ -8,8 +8,12 @@ import {
 } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
-// Your S3 / R2 bucket must have a CORS policy allowing the app origin.
-// Example policy for Cloudflare R2:
+// ── REQUIRED: CORS policy on your S3 / R2 bucket ──────────────────────────
+// Without this, browser uploads will fail with "TypeError: Failed to fetch"
+// because the browser preflight (OPTIONS) request will be blocked.
+//
+// For Cloudflare R2: Dashboard → R2 → Bucket → Settings → CORS
+// Paste this policy:
 //   [
 //     {
 //       "AllowedOrigins": ["http://localhost:3000", "https://yourdomain.com"],
@@ -18,7 +22,8 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 //       "ExposeHeaders": ["ETag"]
 //     }
 //   ]
-// The "ExposeHeaders: ETag" is required for multipart uploads to work.
+// The "ExposeHeaders: ETag" header is REQUIRED for multipart uploads.
+// ────────────────────────────────────────────────────────────────────────────
 
 export const BUCKET = process.env.CLOUDFLARE_R2_BUCKET || process.env.AWS_S3_BUCKET
 

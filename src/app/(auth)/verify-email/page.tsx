@@ -3,7 +3,6 @@
 import { useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Loader2, CheckCircle, AlertTriangle } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 function VerifyForm() {

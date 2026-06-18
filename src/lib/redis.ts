@@ -4,7 +4,21 @@ const isUpstashConfigured =
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
 
 // In-memory store for local development without Redis
-const memoryStore = new Map<string, string>()
+interface MemoryEntry {
+  value: string
+  expiresAt: number | null
+}
+
+const memoryStore = new Map<string, MemoryEntry>()
+
+function cleanExpired(): void {
+  const now = Date.now()
+  for (const [key, entry] of memoryStore) {
+    if (entry.expiresAt !== null && now > entry.expiresAt) {
+      memoryStore.delete(key)
+    }
+  }
+}
 
 // Upstash Redis for serverless-compatible operations
 // (presence tracking, rate limiting, caching)
@@ -15,17 +29,27 @@ export const redis = isUpstashConfigured
     })
   : // Mock redis client for local development
     ({
-      set: async (key: string, value: string) => {
-        memoryStore.set(key, typeof value === "string" ? value : JSON.stringify(value))
+      set: async (key: string, value: string, opts?: { ex?: number }) => {
+        cleanExpired()
+        const expiresAt = opts?.ex ? Date.now() + opts.ex * 1000 : null
+        memoryStore.set(key, {
+          value: typeof value === "string" ? value : JSON.stringify(value),
+          expiresAt,
+        })
         return "OK"
       },
       get: async (key: string) => {
-        const val = memoryStore.get(key)
-        if (!val) return null
+        cleanExpired()
+        const entry = memoryStore.get(key)
+        if (!entry) return null
+        if (entry.expiresAt !== null && Date.now() > entry.expiresAt) {
+          memoryStore.delete(key)
+          return null
+        }
         try {
-          return JSON.parse(val)
+          return JSON.parse(entry.value)
         } catch {
-          return val
+          return entry.value
         }
       },
       del: async (key: string) => (memoryStore.delete(key) ? 1 : 0),

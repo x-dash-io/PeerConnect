@@ -13,7 +13,7 @@ export function ConversationSidebar() {
   return (
     <aside
       className={cn(
-        "shrink-0 flex-col border-r border-border-subtle glass-heavy",
+        "shrink-0 flex-col border-r border-border-subtle glass-heavy h-full",
         hasActiveConversation
           ? "hidden md:flex md:w-80"
           : isFullPageRoute

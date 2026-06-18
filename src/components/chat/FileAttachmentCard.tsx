@@ -25,16 +25,32 @@ function getFileIcon(mimeType: string) {
   return <File className="size-5" />
 }
 
+async function downloadFromS3(s3Key: string, filename: string): Promise<void> {
+  const res = await fetch(`/api/uploads/download?key=${encodeURIComponent(s3Key)}`)
+  if (!res.ok) throw new Error("Failed to get download URL")
+  const { url } = await res.json()
+
+  // Fetch the file as a blob and trigger a download
+  const fileRes = await fetch(url)
+  if (!fileRes.ok) throw new Error("Failed to download file")
+  const blob = await fileRes.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = blobUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(blobUrl)
+}
+
 export function FileAttachmentCard({ file, isSelf }: FileAttachmentCardProps) {
   const [isDownloading, setIsDownloading] = useState(false)
 
   const handleDownload = async () => {
     setIsDownloading(true)
     try {
-      const res = await fetch(`/api/uploads/download?key=${encodeURIComponent(file.s3Key)}`)
-      if (!res.ok) throw new Error("Failed to get download URL")
-      const { url } = await res.json()
-      window.open(url, "_blank")
+      await downloadFromS3(file.s3Key, file.filename)
     } catch (error) {
       console.error("[Download] Failed:", error)
     } finally {

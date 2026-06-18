@@ -1,6 +1,6 @@
 "use client"
 
-import { useTheme } from "next-themes"
+import { useTheme } from "@/providers/ThemeProvider"
 import { useSyncExternalStore } from "react"
 import { Sun, Moon, Monitor } from "lucide-react"
 import { cn } from "@/lib/utils"

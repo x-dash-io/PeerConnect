@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { signOut } from "next-auth/react"
 import {
   Users,
   Briefcase,
@@ -12,7 +14,7 @@ import {
   AlertTriangle,
   Type,
   Palette,
-  Image,
+  LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,7 +23,7 @@ import { UserAvatar } from "@/components/shared"
 import { RoleBadge } from "@/components/shared/RoleBadge"
 import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { cn } from "@/lib/utils"
-import type { UserRole, FontSize, BubbleTheme, ChatPreferences } from "@/types"
+import type { UserRole, FontSize, BubbleTheme } from "@/types"
 import { BUBBLE_THEMES } from "@/types"
 
 interface SettingsUser {
@@ -67,6 +69,7 @@ export function SettingsForm({
   user: SettingsUser
   initialPreferences: Record<string, unknown>
 }) {
+  const queryClient = useQueryClient()
   const [name, setName] = useState(user.name ?? "")
   const [bio, setBio] = useState(user.bio ?? "")
   const [avatarUrl, setAvatarUrl] = useState(user.image ?? "")
@@ -81,9 +84,6 @@ export function SettingsForm({
   const [bubbleTheme, setBubbleTheme] = useState<BubbleTheme>(
     (initialPreferences.bubbleTheme as BubbleTheme) ?? "indigo",
   )
-  const [wallpaper, setWallpaper] = useState<string | null>(
-    (initialPreferences.wallpaper as string) ?? null,
-  )
   const [savingChatPrefs, setSavingChatPrefs] = useState(false)
 
   const profileDirty =
@@ -97,11 +97,16 @@ export function SettingsForm({
     setSavingAvatar(true)
     try {
       // Get signed URL
-      const { url, key } = await fetch("/api/users/avatar", {
+      const avatarRes = await fetch("/api/users/avatar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentType: file.type, sizeBytes: file.size }),
-      }).then((r) => r.json())
+      })
+      if (!avatarRes.ok) {
+        const err = await avatarRes.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to get upload URL")
+      }
+      const { url, key } = await avatarRes.json()
 
       // Upload to S3
       const uploadRes = await fetch(url, { method: "PUT", body: file })
@@ -173,9 +178,10 @@ export function SettingsForm({
       const res = await fetch("/api/users/me/preferences", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fontSize, bubbleTheme, wallpaper }),
+        body: JSON.stringify({ fontSize, bubbleTheme }),
       })
       if (!res.ok) throw new Error("Failed to save")
+      queryClient.invalidateQueries({ queryKey: ["chat-preferences"] })
       toast.success("Chat preferences updated")
     } catch {
       toast.error("Failed to update chat preferences")
@@ -187,7 +193,7 @@ export function SettingsForm({
   return (
     <div className="space-y-6">
       {/* Appearance */}
-      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow">
+      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow hover:shadow-md transition-shadow duration-200">
         <h2 className="font-display text-lg font-semibold text-text-high">Appearance</h2>
         <p className="mt-0.5 text-sm text-text-medium">Choose your preferred theme</p>
         <div className="mt-4">
@@ -196,7 +202,7 @@ export function SettingsForm({
       </section>
 
       {/* Profile */}
-      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow">
+      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow hover:shadow-md transition-all duration-200">
         <h2 className="font-display text-lg font-semibold text-text-high">Profile</h2>
         <p className="mt-0.5 text-sm text-text-medium">Your public information</p>
 
@@ -207,7 +213,7 @@ export function SettingsForm({
               src={(avatarUrl || user.image) ?? undefined}
               size="lg"
             />
-            <label className="absolute -bottom-1 -right-1 flex size-7 cursor-pointer items-center justify-center rounded-full border-2 border-bg-surface bg-bg-muted text-text-medium transition-colors hover:bg-bg-elevated hover:text-text-high">
+            <label className="absolute -bottom-1 -right-1 flex size-7 cursor-pointer items-center justify-center rounded-full border-2 border-bg-surface bg-bg-muted text-text-medium transition-all duration-200 hover:bg-bg-elevated hover:text-text-high hover:scale-105">
               {savingAvatar ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (
@@ -238,7 +244,7 @@ export function SettingsForm({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your display name"
-              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25"
+              className="h-10 bg-bg-deep border-border-main text-text-high placeholder:text-text-low focus-visible:border-brand focus-visible:ring-brand/25 transition-all duration-200"
             />
           </div>
           <div>
@@ -251,7 +257,7 @@ export function SettingsForm({
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell others a bit about yourself..."
               rows={3}
-              className="w-full rounded-xl border border-border-main bg-bg-deep px-3 py-2.5 text-sm text-text-high placeholder:text-text-low outline-none transition-colors focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-brand/25 resize-none"
+              className="w-full rounded-xl border border-border-main bg-bg-deep px-3 py-2.5 text-sm text-text-high placeholder:text-text-low outline-none transition-all duration-200 focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-brand/25 resize-none"
             />
           </div>
         </div>
@@ -268,7 +274,7 @@ export function SettingsForm({
       </section>
 
       {/* Role */}
-      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow">
+      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow hover:shadow-md transition-all duration-200">
         <h2 className="font-display text-lg font-semibold text-text-high">Role</h2>
         <p className="mt-0.5 text-sm text-text-medium">How you use PeerConnect</p>
 
@@ -284,7 +290,7 @@ export function SettingsForm({
                   "relative flex flex-col items-center rounded-xl p-5 text-center transition-all duration-200 cursor-pointer",
                   selected
                     ? "border-2 border-brand bg-brand-subtle shadow-sm glow-brand-sm"
-                    : "border border-border-main bg-bg-deep hover:bg-bg-muted hover:border-border-main",
+                    : "border border-border-main bg-bg-deep hover:bg-bg-muted hover:border-border-main hover:scale-105",
                 )}
               >
                 {selected && (
@@ -321,7 +327,7 @@ export function SettingsForm({
       </section>
 
       {/* Chat Settings */}
-      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow">
+      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow hover:shadow-md transition-all duration-200">
         <h2 className="font-display text-lg font-semibold text-text-high">Chat</h2>
         <p className="mt-0.5 text-sm text-text-medium">Customize your messaging experience</p>
 
@@ -341,7 +347,7 @@ export function SettingsForm({
                   "flex-1 rounded-xl px-4 py-3 text-center transition-all duration-200 cursor-pointer",
                   fontSize === opt.value
                     ? "border-2 border-brand bg-brand-subtle shadow-sm"
-                    : "border border-border-main bg-bg-deep hover:bg-bg-muted",
+                    : "border border-border-main bg-bg-deep hover:bg-bg-muted hover:scale-105",
                 )}
               >
                 <span
@@ -397,43 +403,6 @@ export function SettingsForm({
           </p>
         </div>
 
-        {/* Wallpaper */}
-        <div className="mt-6">
-          <label className="flex items-center gap-2 text-sm font-medium text-text-high">
-            <Image className="size-4 text-text-medium" />
-            Chat Wallpaper
-          </label>
-          <div className="mt-3 flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                const url = prompt("Enter wallpaper image URL:")
-                if (url) setWallpaper(url)
-              }}
-              className="border-border-main text-text-medium hover:text-text-high"
-            >
-              {wallpaper ? "Change Wallpaper" : "Set Wallpaper"}
-            </Button>
-            {wallpaper && (
-              <Button
-                variant="ghost"
-                onClick={() => setWallpaper(null)}
-                className="text-danger hover:text-danger hover:bg-danger/10"
-              >
-                Remove
-              </Button>
-            )}
-          </div>
-          {wallpaper && (
-            <div className="mt-3 overflow-hidden rounded-xl border border-border-subtle">
-              <div
-                className="h-24 w-full rounded-lg bg-cover bg-center"
-                style={{ backgroundImage: `url(${wallpaper})` }}
-              />
-            </div>
-          )}
-        </div>
-
         <div className="mt-6 flex justify-end">
           <Button
             onClick={saveChatPrefs}
@@ -448,7 +417,7 @@ export function SettingsForm({
       <Separator className="bg-border-subtle" />
 
       {/* Account */}
-      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow">
+      <section className="rounded-2xl border border-border-subtle bg-bg-surface p-6 surface-glow hover:shadow-md transition-all duration-200">
         <h2 className="font-display text-lg font-semibold text-text-high">Account</h2>
         <p className="mt-0.5 text-sm text-text-medium">Manage your account credentials</p>
 
@@ -466,11 +435,28 @@ export function SettingsForm({
             <Button
               variant="outline"
               onClick={() => toast.info("Password change coming soon")}
-              className="border-border-main text-text-medium hover:text-text-high"
+              className="border-border-main text-text-medium hover:text-text-high hover:bg-bg-muted transition-all duration-200"
             >
               Change Password
             </Button>
           </div>
+        </div>
+
+        <Separator className="my-6 bg-border-subtle" />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-text-high">Sign Out</p>
+            <p className="text-xs text-text-medium">End your current session</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => signOut({ redirectTo: "/login" })}
+            className="border-danger/30 text-danger hover:bg-danger/10 hover:text-danger transition-all duration-200 gap-2"
+          >
+            <LogOut className="size-4" />
+            Sign Out
+          </Button>
         </div>
       </section>
     </div>

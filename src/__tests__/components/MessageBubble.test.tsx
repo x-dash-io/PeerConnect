@@ -22,6 +22,7 @@ vi.mock("framer-motion", () => ({
 
 vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean }) => (
+    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
     <img data-testid="mock-image" {...props} />
   ),
 }))
@@ -45,15 +46,26 @@ describe("MessageBubble", () => {
     expect(screen.getByText("Hello world")).toBeInTheDocument()
   })
 
-  it("shows deleted placeholder when isDeleted as thin separator", () => {
+  it("shows deleted bubble when isDeleted is true", () => {
     render(
       <MessageBubble
-        message={createMessage({ isDeleted: "true" })}
+        message={createMessage({ isDeleted: true })}
         isSelf={false}
         isGrouped={false}
       />,
     )
     expect(screen.getByText("Message deleted")).toBeInTheDocument()
+  })
+
+  it("shows 'You deleted this message' for self deleted messages", () => {
+    render(
+      <MessageBubble
+        message={createMessage({ isDeleted: true })}
+        isSelf={true}
+        isGrouped={false}
+      />,
+    )
+    expect(screen.getByText("You deleted this message")).toBeInTheDocument()
   })
 
   it("shows edited indicator when editedAt is set", () => {
@@ -96,7 +108,7 @@ describe("MessageBubble", () => {
     expect(onEdit).toHaveBeenCalledWith("msg-1", "Edited content")
   })
 
-  it("calls onDelete when delete confirmed", async () => {
+  it("calls onDelete with 'everyone' when delete for everyone confirmed", async () => {
     const user = userEvent.setup()
     const onDelete = vi.fn()
 
@@ -112,13 +124,60 @@ describe("MessageBubble", () => {
     const actionsBtn = screen.getByRole("button", { name: "Message actions" })
     await user.click(actionsBtn)
 
-    const deleteItem = await screen.findByRole("menuitem", { name: /delete/i })
+    const deleteItem = await screen.findByRole("menuitem", { name: /delete for everyone/i })
     await user.click(deleteItem)
 
-    const confirmBtn = screen.getByRole("button", { name: /delete/i })
+    const confirmBtn = screen.getByRole("button", { name: "Delete for everyone" })
     await user.click(confirmBtn)
 
-    expect(onDelete).toHaveBeenCalledWith("msg-1")
+    expect(onDelete).toHaveBeenCalledWith("msg-1", "everyone")
+  })
+
+  it("calls onDelete with 'me' when delete for me confirmed for self message", async () => {
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+
+    render(
+      <MessageBubble
+        message={createMessage()}
+        isSelf={true}
+        isGrouped={false}
+        onDelete={onDelete}
+      />,
+    )
+
+    const actionsBtn = screen.getByRole("button", { name: "Message actions" })
+    await user.click(actionsBtn)
+
+    const deleteItem = await screen.findByRole("menuitem", { name: /delete for me/i })
+    await user.click(deleteItem)
+
+    const confirmBtn = screen.getByRole("button", { name: "Delete for me" })
+    await user.click(confirmBtn)
+
+    expect(onDelete).toHaveBeenCalledWith("msg-1", "me")
+  })
+
+  it("calls onDelete with 'me' immediately for other's message", async () => {
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+
+    render(
+      <MessageBubble
+        message={createMessage({ senderId: "other-user" })}
+        isSelf={false}
+        isGrouped={false}
+        onDelete={onDelete}
+      />,
+    )
+
+    const actionsBtn = screen.getByRole("button", { name: "Message actions" })
+    await user.click(actionsBtn)
+
+    const deleteItem = await screen.findByRole("menuitem", { name: /delete for me/i })
+    await user.click(deleteItem)
+
+    expect(onDelete).toHaveBeenCalledWith("msg-1", "me")
   })
 
   it("calls onReply when reply clicked", async () => {

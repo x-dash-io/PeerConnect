@@ -5,6 +5,8 @@ import { eq, and, ne, gt, desc, sql, inArray } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { NextRequest, NextResponse } from "next/server"
 import { csrfGuard } from "@/lib/csrf"
+import { generateId } from "@/lib/id"
+import { getIO } from "@/lib/socket-server"
 
 const CONVERSATIONS_PAGE_SIZE = 50
 
@@ -14,7 +16,6 @@ export async function GET(req: NextRequest) {
   const currentUserId = session.user.id
 
   const { searchParams } = req.nextUrl
-  const cursor = searchParams.get("cursor")
   const limit = Math.min(
     parseInt(searchParams.get("limit") || String(CONVERSATIONS_PAGE_SIZE), 10),
     100,
@@ -101,7 +102,7 @@ export async function GET(req: NextRequest) {
   }>(sql`
     SELECT DISTINCT ON (m.conversation_id) m.id, m.conversation_id, m.sender_id, m.content, m.type, m.status, m.created_at
     FROM messages m
-    WHERE m.conversation_id = ANY(${convIds})
+    WHERE m.conversation_id = ANY(ARRAY[${sql.join(convIds, sql`, `)}])
     ORDER BY m.conversation_id, m.created_at DESC
   `)
 
@@ -139,4 +140,114 @@ export async function GET(req: NextRequest) {
   }))
 
   return NextResponse.json({ conversations: enriched, nextCursor })
+}
+
+export async function POST(req: NextRequest) {
+  const guard = csrfGuard(req)
+  if (guard) return guard
+
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const currentUserId = session.user.id
+
+  const body = await req.json()
+  const { recipientId } = body
+  if (!recipientId) {
+    return NextResponse.json({ error: "recipientId is required" }, { status: 400 })
+  }
+
+  const [recipient] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      image: users.image,
+      email: users.email,
+      role: users.role,
+    })
+    .from(users)
+    .where(eq(users.id, recipientId))
+    .limit(1)
+
+  if (!recipient) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 })
+  }
+
+  // Check for existing DIRECT conversation between the two users
+  const cp1 = alias(conversationParticipants, "cp1")
+  const cp2 = alias(conversationParticipants, "cp2")
+
+  const [existing] = await db
+    .select({ id: conversations.id, createdAt: conversations.createdAt })
+    .from(conversations)
+    .innerJoin(cp1, and(eq(conversations.id, cp1.conversationId), eq(cp1.userId, currentUserId)))
+    .innerJoin(cp2, and(eq(conversations.id, cp2.conversationId), eq(cp2.userId, recipientId)))
+    .where(eq(conversations.type, "DIRECT"))
+    .limit(1)
+
+  if (existing) {
+    const participants = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        image: users.image,
+        email: users.email,
+        role: users.role,
+      })
+      .from(conversationParticipants)
+      .innerJoin(users, eq(conversationParticipants.userId, users.id))
+      .where(eq(conversationParticipants.conversationId, existing.id))
+
+    return NextResponse.json({
+      id: existing.id,
+      type: "DIRECT",
+      createdAt: existing.createdAt,
+      participants,
+    })
+  }
+
+  const conversationId = generateId()
+  const now = new Date()
+
+  await db.insert(conversations).values({
+    id: conversationId,
+    type: "DIRECT",
+    createdAt: now,
+  })
+
+  await db.insert(conversationParticipants).values([
+    { conversationId, userId: currentUserId },
+    { conversationId, userId: recipientId },
+  ])
+
+  const participants = [
+    {
+      id: currentUserId,
+      name: session.user.name,
+      image: session.user.image,
+      email: session.user.email!,
+      role: (session.user as unknown as Record<string, unknown>).role as string,
+    },
+    {
+      id: recipient.id,
+      name: recipient.name,
+      image: recipient.image,
+      email: recipient.email,
+      role: recipient.role,
+    },
+  ]
+
+  const io = getIO()
+  if (io) {
+    io.to(`user:${recipientId}`).emit("conversation:new", {
+      id: conversationId,
+      type: "DIRECT",
+      createdAt: now,
+      participants,
+    })
+  }
+
+  return NextResponse.json(
+    { id: conversationId, type: "DIRECT", createdAt: now, participants },
+    { status: 201 },
+  )
 }

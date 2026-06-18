@@ -58,22 +58,29 @@ export function MessageComposer({
 
   const handleFileSelect = async (file: File) => {
     setIsUploading(true)
-    setUploadProgress(0)
+    setUploadProgress(5)
     setCurrentFile(file)
     try {
       const result = await uploadFile(file, null, (progress) => {
-        setUploadProgress(progress.percentage)
+        setUploadProgress(Math.min(progress.percentage, 90))
       })
+      setUploadProgress(95)
       sendMessage({
         content: `Sent a file: ${file.name}`,
         fileId: result.fileId,
         type: getMessageType(file.type),
         replyToId: replyTo?.id,
       })
+      setUploadProgress(100)
+      await new Promise((r) => setTimeout(r, 300))
       toast.success("File uploaded successfully")
     } catch (error) {
       console.error("[Upload] Failed:", error)
-      toast.error("Upload failed. Please try again.")
+      const message =
+        error instanceof TypeError && error.message === "Failed to fetch"
+          ? "Upload failed - check CORS settings on your S3/R2 bucket"
+          : "Upload failed. Please try again."
+      toast.error(message)
     } finally {
       setIsUploading(false)
       setUploadProgress(0)
@@ -116,11 +123,16 @@ export function MessageComposer({
   }, [socket, conversationId, currentUserId, stopTyping])
 
   useEffect(() => {
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    isTypingRef.current = false
+  }, [conversationId])
+
+  useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
       stopTyping()
     }
-  }, [stopTyping])
+  }, [stopTyping, conversationId])
 
   const handleSend = useCallback(() => {
     const trimmed = content.trim()
@@ -195,7 +207,7 @@ export function MessageComposer({
   }, [replyTo])
 
   return (
-    <div className="shrink-0 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3">
+    <div className="shrink-0 border-t border-border-subtle bg-bg-surface/90 dark:bg-bg-deep/90 backdrop-blur-xl px-4 py-3">
       {/* Upload progress */}
       <AnimatePresence>
         {isUploading && currentFile && (
@@ -218,7 +230,7 @@ export function MessageComposer({
             transition={{ duration: 0.15 }}
             className="overflow-hidden"
           >
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-neutral-200 dark:border-neutral-700 bg-indigo-50/50 dark:bg-indigo-950/30 mb-2">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle bg-brand-subtle mb-2">
               <Reply className="size-4 text-indigo-500 shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-medium text-indigo-500">{replyTo.senderName}</span>
@@ -228,7 +240,8 @@ export function MessageComposer({
               </div>
               <button
                 onClick={onCancelReply}
-                className="size-6 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                aria-label="Close reply"
+                className="size-6 rounded-full flex items-center justify-center text-text-low hover:text-text-high hover:bg-bg-muted transition-colors"
               >
                 <X className="size-3.5" />
               </button>
@@ -237,7 +250,7 @@ export function MessageComposer({
         )}
       </AnimatePresence>
 
-      <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-300 dark:focus-within:border-indigo-500 transition-all">
+      <div className="rounded-2xl border border-border-main bg-bg-surface dark:bg-bg-muted focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand/50 transition-all">
         <div className="flex items-end gap-2 px-4 py-3">
           <FileUploadButton onFileSelect={handleFileSelect} disabled={isUploading || isPending} />
 

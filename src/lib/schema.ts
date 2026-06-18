@@ -3,6 +3,7 @@ import {
   text,
   timestamp,
   integer,
+  boolean,
   pgEnum,
   jsonb,
   index,
@@ -118,7 +119,7 @@ export const messages = pgTable(
     replyToId: text("reply_to_id"), // FK added via migration (circular ref prevents self-reference in schema)
     metadata: jsonb("metadata"), // for file references, audio duration, etc.
     editedAt: timestamp("edited_at"),
-    isDeleted: text("is_deleted").default("false").notNull(),
+    isDeleted: boolean("is_deleted").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -257,6 +258,30 @@ export const messageReactions = pgTable(
     messageIdx: index("mr_message_idx").on(table.messageId),
   }),
 )
+
+// Hidden messages (delete for me)
+export const hiddenMessages = pgTable(
+  "hidden_messages",
+  {
+    messageId: text("message_id")
+      .notNull()
+      .references(() => messages.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    hiddenAt: timestamp("hidden_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: uniqueIndex("hm_message_user_pk").on(table.messageId, table.userId),
+    messageIdx: index("hm_message_idx").on(table.messageId),
+    userIdx: index("hm_user_idx").on(table.userId),
+  }),
+)
+
+export const hiddenMessagesRelations = relations(hiddenMessages, ({ one }) => ({
+  message: one(messages, { fields: [hiddenMessages.messageId], references: [messages.id] }),
+  user: one(users, { fields: [hiddenMessages.userId], references: [users.id] }),
+}))
 
 export const messageReactionsRelations = relations(messageReactions, ({ one }) => ({
   message: one(messages, { fields: [messageReactions.messageId], references: [messages.id] }),

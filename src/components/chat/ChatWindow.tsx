@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useMessages, useEditMessage, useDeleteMessage } from "@/hooks/useMessages"
+import { useMessages, useEditMessage, useDeleteMessage, useHideMessage } from "@/hooks/useMessages"
 import { useToggleReaction } from "@/hooks/useMessageReactions"
 import { ChatHeader } from "./ChatHeader"
 import { MessageList } from "./MessageList"
@@ -30,6 +30,7 @@ export function ChatWindow({
     useMessages(conversationId)
   const { mutate: editMessage } = useEditMessage(conversationId)
   const { mutate: deleteMessage } = useDeleteMessage(conversationId)
+  const { mutate: hideMessage } = useHideMessage(conversationId)
   const { mutate: toggleReaction } = useToggleReaction(conversationId)
 
   // Extracted socket hooks
@@ -65,7 +66,9 @@ export function ChatWindow({
             setReplyTo({ id: msg.id, content: msg.content, senderName: msg.senderName ?? null })
           }
           onEditMessage={(messageId, content) => editMessage({ messageId, content })}
-          onDeleteMessage={(messageId) => deleteMessage(messageId)}
+          onDeleteMessage={(messageId, mode) =>
+            mode === "everyone" ? deleteMessage(messageId) : hideMessage(messageId)
+          }
           onReact={(messageId, emoji) => toggleReaction({ messageId, emoji })}
         />
       </div>

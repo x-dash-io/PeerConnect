@@ -51,3 +51,12 @@ export async function rateLimit(
 export function rateLimitAuth(key: string) {
   return rateLimit(`auth:${key}`, authLimit)
 }
+
+const messageLimit: RateLimitConfig = {
+  maxRequests: 30,
+  windowSeconds: 60,
+}
+
+export function rateLimitMessages(key: string) {
+  return rateLimit(`msg:${key}`, messageLimit)
+}

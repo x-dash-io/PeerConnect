@@ -2,7 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { renderHook, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import React from "react"
-import { useMessages, useSendMessage, useEditMessage, useDeleteMessage } from "@/hooks/useMessages"
+import {
+  useMessages,
+  useSendMessage,
+  useEditMessage,
+  useDeleteMessage,
+  useHideMessage,
+} from "@/hooks/useMessages"
 import { Message } from "@/types"
 
 const createWrapper = () => {
@@ -120,6 +126,35 @@ describe("useEditMessage", () => {
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining("/api/conversations/conv-1/messages/msg-1"),
       expect.objectContaining({ method: "PATCH" }),
+    )
+  })
+})
+
+describe("useHideMessage", () => {
+  const fetchSpy = vi.spyOn(globalThis, "fetch")
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("hides a message", async () => {
+    fetchSpy.mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    const { result } = renderHook(() => useHideMessage("conv-1"), {
+      wrapper: createWrapper(),
+    })
+
+    result.current.mutate("msg-1")
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining("/api/conversations/conv-1/messages/msg-1/hide"),
+      expect.objectContaining({ method: "POST" }),
     )
   })
 })

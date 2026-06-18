@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Search, UserPlus, MessageSquare, Users } from "lucide-react"
+import { Search, MessageSquare, Users } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { AvatarWithPresence } from "@/components/shared/AvatarWithPresence"

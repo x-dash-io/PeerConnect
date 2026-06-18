@@ -40,15 +40,15 @@ export function ConversationListItem({
     <div
       onClick={onClick}
       className={cn(
-        "group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition-colors",
+        "group relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200",
         isActive
-          ? "bg-indigo-50 dark:bg-indigo-950/30 border-l-2 border-indigo-500"
-          : "hover:bg-neutral-100 dark:hover:bg-neutral-800/50",
+          ? "bg-brand-subtle border-l-2 border-brand"
+          : "hover:bg-bg-muted hover:transform hover:scale-[1.01]",
       )}
     >
       {/* Avatar with presence */}
       <div className="relative shrink-0">
-        <div className="flex size-10 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-sm font-medium text-indigo-700 dark:text-indigo-300">
+        <div className="flex size-10 items-center justify-center rounded-full bg-brand-subtle text-sm font-medium text-brand shadow-sm">
           {getInitials(otherParticipant?.name || "U")}
         </div>
         <PresenceDot status={presenceStatus} />
@@ -57,10 +57,10 @@ export function ConversationListItem({
       {/* Info */}
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <span className="truncate text-sm font-medium text-text-high">
             {otherParticipant?.name || otherParticipant?.email}
           </span>
-          <span className="shrink-0 text-[10px] text-neutral-400 tabular-nums ml-auto">
+          <span className="shrink-0 text-[10px] text-text-low tabular-nums ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             {lastMessage
               ? formatTimestamp(lastMessage.createdAt)
               : formatTimestamp(conversation.createdAt)}
@@ -68,12 +68,12 @@ export function ConversationListItem({
         </div>
 
         <div className="flex items-center justify-between gap-2 mt-0.5">
-          <p className="truncate text-xs text-neutral-400 max-w-[140px]">
+          <p className="truncate text-xs text-text-low max-w-[140px] group-hover:text-text-medium transition-colors duration-200">
             {lastMessage?.content || "No messages yet"}
           </p>
 
           {unreadCount > 0 && (
-            <div className="flex shrink-0 min-w-[18px] items-center justify-center rounded-full bg-indigo-500 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            <div className="flex shrink-0 min-w-[18px] items-center justify-center rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm">
               {unreadCount}
             </div>
           )}

@@ -3,15 +3,39 @@
 import { Check, CheckCheck, Loader2 } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import type { BubbleTheme } from "@/types"
+
+const READ_COLORS: Record<BubbleTheme, string> = {
+  indigo: "text-indigo-500",
+  emerald: "text-emerald-500",
+  violet: "text-violet-500",
+  rose: "text-rose-500",
+  amber: "text-amber-500",
+  sky: "text-sky-500",
+}
+
+const READ_COLORS_LIGHT: Record<BubbleTheme, string> = {
+  indigo: "text-white",
+  emerald: "text-white",
+  violet: "text-white",
+  rose: "text-white",
+  amber: "text-white",
+  sky: "text-white",
+}
 
 type MessageStatus = "sending" | "sent" | "delivered" | "read"
 
 interface MessageStatusIconProps {
   status: MessageStatus
   variant?: "default" | "light" | "inline"
+  bubbleTheme?: BubbleTheme
 }
 
-export function MessageStatusIcon({ status, variant = "default" }: MessageStatusIconProps) {
+export function MessageStatusIcon({
+  status,
+  variant = "default",
+  bubbleTheme = "indigo",
+}: MessageStatusIconProps) {
   const isLight = variant === "light" || variant === "inline"
 
   const config = {
@@ -29,7 +53,7 @@ export function MessageStatusIcon({ status, variant = "default" }: MessageStatus
     },
     read: {
       Icon: CheckCheck,
-      className: isLight ? "text-white" : "text-indigo-500",
+      className: isLight ? READ_COLORS_LIGHT[bubbleTheme] : READ_COLORS[bubbleTheme],
     },
   } as const
 

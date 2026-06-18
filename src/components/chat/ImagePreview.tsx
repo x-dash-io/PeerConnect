@@ -11,6 +11,7 @@ interface ImagePreviewProps {
   file: FileAttachment
 }
 
+/* eslint-disable @next/next/no-img-element */
 export function ImagePreview({ file }: ImagePreviewProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isVisible, setIsVisible] = useState(false)

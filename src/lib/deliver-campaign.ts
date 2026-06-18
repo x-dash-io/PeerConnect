@@ -9,7 +9,7 @@ import {
 } from "@/lib/schema"
 import { eq, sql } from "drizzle-orm"
 import { generateId } from "@/lib/id"
-import type { Server } from "socket.io"
+import { getIO } from "@/lib/socket-server"
 import type { Message } from "@/types"
 
 interface DeliverInput {
@@ -69,7 +69,7 @@ export async function deliverCampaign(input: DeliverInput): Promise<{ deliveredC
       deliveredCount++
 
       // Notify via Socket.io
-      const io: Server | undefined = (global as Record<string, unknown>).io as Server | undefined
+      const io = getIO()
       if (io) {
         const [sender] = await db
           .select({ name: users.name, image: users.image })

@@ -163,6 +163,9 @@ export const RichTextInput = forwardRef<RichTextInputHandle, RichTextInputProps>
       <div
         ref={divRef}
         contentEditable
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Message input"
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={onKeyDown}

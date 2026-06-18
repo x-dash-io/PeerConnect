@@ -1,7 +1,8 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Message, MessageType } from "@/types"
+import { Message } from "@/types"
 import { MESSAGE_PAGE_SIZE } from "@/lib/constants"
 import { toast } from "sonner"
+import { optimisticUpdate, rollbackUpdate } from "@/lib/query-optimistic"
 
 export function useMessages(conversationId: string) {
   return useInfiniteQuery({
@@ -55,11 +56,7 @@ export function useSendMessage(conversationId: string) {
       return res.json() as Promise<Message>
     },
     onMutate: async ({ content, type = "TEXT", metadata }) => {
-      await qc.cancelQueries({ queryKey: ["messages", conversationId] })
-
-      const previous = qc.getQueryData(["messages", conversationId])
       const tempId = `optimistic-${Date.now()}`
-
       const optimisticMessage: Message = {
         id: tempId,
         conversationId,
@@ -71,7 +68,7 @@ export function useSendMessage(conversationId: string) {
         createdAt: new Date().toISOString(),
       }
 
-      qc.setQueryData(["messages", conversationId], (old: PageData | undefined) => {
+      const previous = await optimisticUpdate<PageData>(qc, ["messages", conversationId], (old) => {
         if (!old) return old
         return {
           ...old,
@@ -105,9 +102,7 @@ export function useSendMessage(conversationId: string) {
       })
     },
     onError: (_err, _content, context) => {
-      if (context?.previous) {
-        qc.setQueryData(["messages", conversationId], context.previous)
-      }
+      rollbackUpdate(qc, ["messages", conversationId], context?.previous)
       toast.error("Failed to send message. Please try again.")
     },
   })
@@ -127,9 +122,7 @@ export function useEditMessage(conversationId: string) {
       return res.json() as Promise<Message>
     },
     onMutate: async ({ messageId, content }) => {
-      await qc.cancelQueries({ queryKey: ["messages", conversationId] })
-      const previous = qc.getQueryData<PageData>(["messages", conversationId])
-      qc.setQueryData<PageData>(["messages", conversationId], (old) => {
+      const previous = await optimisticUpdate<PageData>(qc, ["messages", conversationId], (old) => {
         if (!old) return old
         return {
           ...old,
@@ -144,10 +137,41 @@ export function useEditMessage(conversationId: string) {
       return { previous }
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        qc.setQueryData(["messages", conversationId], context.previous)
-      }
+      rollbackUpdate(qc, ["messages", conversationId], context?.previous)
       toast.error("Failed to edit message")
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["messages", conversationId] })
+    },
+  })
+}
+
+export function useHideMessage(conversationId: string) {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const res = await fetch(`/api/conversations/${conversationId}/messages/${messageId}/hide`, {
+        method: "POST",
+      })
+      if (!res.ok) throw new Error("Failed to hide message")
+    },
+    onMutate: async (messageId) => {
+      const previous = await optimisticUpdate<PageData>(qc, ["messages", conversationId], (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            messages: page.messages.filter((m) => m.id !== messageId),
+          })),
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      rollbackUpdate(qc, ["messages", conversationId], context?.previous)
+      toast.error("Failed to hide message")
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["messages", conversationId] })
@@ -166,30 +190,40 @@ export function useDeleteMessage(conversationId: string) {
       if (!res.ok) throw new Error("Failed to delete message")
     },
     onMutate: async (messageId) => {
-      await qc.cancelQueries({ queryKey: ["messages", conversationId] })
-      const previous = qc.getQueryData<PageData>(["messages", conversationId])
-      qc.setQueryData<PageData>(["messages", conversationId], (old) => {
+      const previous = await optimisticUpdate<PageData>(qc, ["messages", conversationId], (old) => {
         if (!old) return old
         return {
           ...old,
           pages: old.pages.map((page) => ({
             ...page,
             messages: page.messages.map((m) =>
-              m.id === messageId ? { ...m, isDeleted: "true", content: null } : m,
+              m.id === messageId ? { ...m, isDeleted: true, content: null } : m,
             ),
           })),
         }
       })
       return { previous }
     },
+    onSuccess: (_data, messageId) => {
+      qc.setQueryData(["messages", conversationId], (old: PageData | undefined) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            messages: page.messages.map((m) =>
+              m.id === messageId ? { ...m, isDeleted: true, content: null } : m,
+            ),
+          })),
+        }
+      })
+    },
     onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        qc.setQueryData(["messages", conversationId], context.previous)
-      }
+      rollbackUpdate(qc, ["messages", conversationId], context?.previous)
       toast.error("Failed to delete message")
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["messages", conversationId] })
+      qc.invalidateQueries({ queryKey: ["conversations"] })
     },
   })
 }

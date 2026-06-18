@@ -26,7 +26,7 @@ import { RoleBadge } from "@/components/shared/RoleBadge"
 import { UserProfile } from "@/types"
 import { toast } from "sonner"
 
-export function NewConversationButton({ variant = "icon" }: { variant?: "icon" | "cta" }) {
+export function NewConversationButton({ variant = "icon" }: { variant?: "icon" | "cta" | "fab" }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const router = useRouter()
@@ -60,14 +60,19 @@ export function NewConversationButton({ variant = "icon" }: { variant?: "icon" |
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          variant === "cta" ? (
+          variant === "fab" ? (
+            <Button
+              size="icon"
+              className="size-14 rounded-full bg-brand hover:bg-brand-hover text-white shadow-xl hover:shadow-2xl transition-all duration-200 active:scale-95"
+            />
+          ) : variant === "cta" ? (
             <Button variant="outline" size="sm" className="gap-2 text-text-medium" />
           ) : (
             <Button variant="ghost" size="icon" className="text-text-medium hover:text-text-high" />
           )
         }
       >
-        <Plus className="size-4" />
+        <Plus className={variant === "fab" ? "size-6" : "size-4"} />
         {variant === "cta" && <span>Start a conversation</span>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-border-main bg-bg-surface">

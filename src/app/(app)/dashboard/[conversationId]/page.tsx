@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { conversations, conversationParticipants, users } from "@/lib/schema"
+import { conversationParticipants, users } from "@/lib/schema"
 import { eq, and } from "drizzle-orm"
 import { redirect, notFound } from "next/navigation"
 import { ChatWindow } from "@/components/chat/ChatWindow"

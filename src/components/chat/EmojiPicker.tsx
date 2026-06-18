@@ -85,6 +85,7 @@ export function EmojiPicker({ open, onClose, onSelect }: EmojiPickerProps) {
               {search && (
                 <button
                   onClick={() => setSearch("")}
+                  aria-label="Clear search"
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-text-low hover:text-text-high"
                 >
                   <X className="size-3.5" />

@@ -52,20 +52,19 @@ export function ConversationList() {
   return (
     <div className="flex flex-col h-full w-full bg-bg-surface/80 backdrop-blur-xl">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-border-subtle">
+      <div className="flex items-center px-4 py-4 border-b border-border-subtle bg-bg-surface/95 backdrop-blur-sm">
         <h2 className="font-display text-lg font-bold text-text-high">Messages</h2>
-        <NewConversationButton />
       </div>
 
       {/* Search */}
-      <div className="px-4 py-3">
+      <div className="px-4 py-3 bg-bg-surface/50 backdrop-blur-sm">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-text-low" />
           <Input
             placeholder="Search conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 bg-neutral-100 dark:bg-neutral-800 border-0 pl-9 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-600 rounded-xl"
+            className="h-9 bg-bg-muted border-0 pl-9 text-sm text-text-high placeholder:text-text-low focus:ring-2 focus:ring-brand/30 rounded-xl transition-all duration-200 focus:bg-bg-surface"
           />
         </div>
       </div>
@@ -91,7 +90,7 @@ export function ConversationList() {
               variant="outline"
               size="sm"
               onClick={() => refetch()}
-              className="gap-2 text-text-medium"
+              className="gap-2 text-text-medium hover:bg-bg-muted transition-all duration-200"
             >
               <RotateCcw className="size-3.5" />
               Retry
@@ -122,6 +121,11 @@ export function ConversationList() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* FAB */}
+      <div className="flex justify-end px-4 pb-20 md:pb-6">
+        <NewConversationButton variant="fab" />
       </div>
     </div>
   )

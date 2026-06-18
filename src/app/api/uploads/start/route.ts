@@ -5,6 +5,7 @@ import { files } from "@/lib/schema"
 import { generateId } from "@/lib/id"
 import { NextRequest, NextResponse } from "next/server"
 import { csrfGuard } from "@/lib/csrf"
+import { redis } from "@/lib/redis"
 
 const MAX_SIZE = 200 * 1024 * 1024 // 200MB
 
@@ -40,6 +41,8 @@ export async function POST(req: NextRequest) {
     uploadStatus: "UPLOADING",
     uploadId,
   })
+
+  await redis.set(`upload:${uploadId}`, session.user.id, { ex: 3600 })
 
   return NextResponse.json({ uploadId, key, fileId })
 }

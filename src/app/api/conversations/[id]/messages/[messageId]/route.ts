@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 import { csrfGuard } from "@/lib/csrf"
 import { sanitizeMessage } from "@/lib/sanitize"
-import type { Server } from "socket.io"
+import { getIO } from "@/lib/socket-server"
 
 export async function PATCH(
   req: NextRequest,
@@ -46,7 +46,7 @@ export async function PATCH(
     .where(eq(messages.id, messageId))
     .returning()
 
-  const io: Server | undefined = (global as Record<string, unknown>).io as Server | undefined
+  const io = getIO()
   if (io) {
     io.to(`conversation:${conversationId}`).emit("message:edited", {
       conversationId,
@@ -82,10 +82,10 @@ export async function DELETE(
 
   await db
     .update(messages)
-    .set({ isDeleted: "true", content: null, updatedAt: new Date() })
+    .set({ isDeleted: true, content: null, updatedAt: new Date() })
     .where(eq(messages.id, messageId))
 
-  const io: Server | undefined = (global as Record<string, unknown>).io as Server | undefined
+  const io = getIO()
   if (io) {
     io.to(`conversation:${conversationId}`).emit("message:deleted", {
       conversationId,

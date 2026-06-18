@@ -18,9 +18,9 @@ describe("validateOrigin", () => {
     expect(validateOrigin(req)).toBe(true)
   })
 
-  it("allows missing origin and referer", () => {
+  it("rejects missing origin and referer", () => {
     const req = mockRequest({})
-    expect(validateOrigin(req)).toBe(true)
+    expect(validateOrigin(req)).toBe(false)
   })
 
   it("blocks cross-origin requests", () => {

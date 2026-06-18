@@ -1,9 +1,8 @@
 "use client"
 
-import { useRef, ChangeEvent } from "react"
+import { useState } from "react"
 import { Paperclip } from "lucide-react"
-import { UPLOAD_MAX_SIZE_BYTES } from "@/lib/constants"
-import { toast } from "sonner"
+import { UploadTypePicker } from "./UploadTypePicker"
 
 interface FileUploadButtonProps {
   onFileSelect: (file: File) => void
@@ -11,44 +10,23 @@ interface FileUploadButtonProps {
 }
 
 export function FileUploadButton({ onFileSelect, disabled }: FileUploadButtonProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (file.size > UPLOAD_MAX_SIZE_BYTES) {
-      toast.error("File is too large. Maximum size is 200MB.")
-      return
-    }
-
-    onFileSelect(file)
-
-    // Reset input so the same file can be selected again if needed
-    e.target.value = ""
-  }
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   return (
     <>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        className="hidden"
-        accept="*/*"
-      />
       <button
         type="button"
         disabled={disabled}
-        onClick={handleButtonClick}
+        onClick={() => setPickerOpen(true)}
         className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors shrink-0 flex items-center justify-center size-9"
       >
         <Paperclip className="size-5" />
       </button>
+      <UploadTypePicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onFileSelect={onFileSelect}
+      />
     </>
   )
 }

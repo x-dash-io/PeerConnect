@@ -92,7 +92,7 @@
   /* Text — deep navy for rich contrast */
   --text-high: #121629;
   --text-medium: #4a5170;
-  --text-low: #8991ad;
+  --text-low: #6b7280;
 
   /* Brand — vibrant indigo */
   --brand: #6366f1;
@@ -147,6 +147,13 @@
   --chart-3: #f59e0b;
   --chart-4: #f43f5e;
   --chart-5: #8991ad;
+
+  /* WhatsApp/Telegram-inspired colors */
+  --whatsapp-green: #00a884;
+  --whatsapp-blue: #0084ff;
+  --whatsapp-gray: #f0f0f0;
+  --whatsapp-dark: #111b21;
+  --whatsapp-light: #ffffff;
 
   color-scheme: light;
 }
@@ -218,6 +225,13 @@
   --chart-3: #fbbf24;
   --chart-4: #fb7185;
   --chart-5: #8b95b0;
+
+  /* WhatsApp/Telegram-inspired dark colors */
+  --whatsapp-green: #00a884;
+  --whatsapp-blue: #0084ff;
+  --whatsapp-gray: #202c33;
+  --whatsapp-dark: #0b141a;
+  --whatsapp-light: #ffffff;
 
   color-scheme: dark;
 }
@@ -381,6 +395,17 @@
   .msg-text {
     font-size: var(--msg-font-size);
     line-height: var(--msg-line-height);
+  }
+
+  /* Scroll snap for landing page */
+  .snap-y {
+    scroll-snap-type: y mandatory;
+  }
+  .snap-start {
+    scroll-snap-align: start;
+  }
+  .snap-mandatory {
+    scroll-snap-stop: always;
   }
 
   .scrollbar-hide::-webkit-scrollbar {

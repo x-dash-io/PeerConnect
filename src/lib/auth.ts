@@ -6,6 +6,7 @@ import { users } from "./schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { generateId } from "./id"
+import { rateLimitAuth } from "./rate-limit"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: DrizzleAdapter(db),
@@ -23,6 +24,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
+
+        const rl = await rateLimitAuth(`login:${credentials.email as string}`)
+        if (!rl.allowed) return null
 
         const [user] = await db
           .select()
@@ -69,23 +73,25 @@ export async function registerUser(data: {
   password: string
   role?: "PEER" | "BUSINESS" | "FREELANCER"
 }) {
-  const existing = await db.select().from(users).where(eq(users.email, data.email)).limit(1)
-  if (existing.length > 0) throw new Error("Email already registered")
+  return db.transaction(async (tx) => {
+    const existing = await tx.select().from(users).where(eq(users.email, data.email)).limit(1)
+    if (existing.length > 0) throw new Error("Email already registered")
 
-  const hashedPassword = await bcrypt.hash(data.password, 10)
-  const id = generateId()
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+    const id = generateId()
 
-  const [user] = await db
-    .insert(users)
-    .values({
-      id,
-      name: data.name,
-      email: data.email,
-      password: hashedPassword,
-      role: data.role || "PEER",
-      updatedAt: new Date(),
-    })
-    .returning()
+    const [user] = await tx
+      .insert(users)
+      .values({
+        id,
+        name: data.name,
+        email: data.email,
+        password: hashedPassword,
+        role: data.role || "PEER",
+        updatedAt: new Date(),
+      })
+      .returning()
 
-  return user
+    return user
+  })
 }

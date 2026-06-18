@@ -140,6 +140,9 @@ app.prepare().then(async () => {
             eq(conversationParticipants.userId, userId),
           ),
         )
+
+      // Confirm to the joining client so it can refresh the conversations list
+      socket.emit("conversation:joined", { conversationId })
     })
 
     // Acknowledge message delivery (SENT → DELIVERED)
@@ -211,8 +214,13 @@ app.prepare().then(async () => {
     socket.on("disconnect", async () => {
       const userId = socket.data.userId as string | undefined
       if (userId) {
-        await setUserOffline(userId)
-        io.emit("presence:update", { userId, status: "offline" })
+        // Check if user still has other active socket connections (e.g. other tabs)
+        const userRoom = io.sockets.adapter.rooms.get(`user:${userId}`)
+        const hasOtherConnections = userRoom && userRoom.size > 0
+        if (!hasOtherConnections) {
+          await setUserOffline(userId)
+          io.emit("presence:update", { userId, status: "offline" })
+        }
       }
       console.log(`[Socket.io] Client disconnected: ${socket.id}`)
     })

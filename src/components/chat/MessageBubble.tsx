@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Reply, ChevronDown, ChevronUp, Pencil, Trash2, X, Check, Plus } from "lucide-react"
+import { Reply, ChevronDown, ChevronUp, Pencil, Trash2, Trash, X, Check, Plus } from "lucide-react"
 import { cn, getInitials } from "@/lib/utils"
 import { Message } from "@/types"
 import { MessageStatusIcon } from "@/components/shared/MessageStatusIcon"
@@ -41,7 +41,7 @@ interface MessageBubbleProps {
   isGrouped: boolean
   onReply?: (message: Message) => void
   onEdit?: (messageId: string, content: string) => void
-  onDelete?: (messageId: string) => void
+  onDelete?: (messageId: string, mode: "me" | "everyone") => void
   onReact?: (messageId: string, emoji: string) => void
   onScrollToMessage?: (messageId: string) => void
   isHighlighted?: boolean
@@ -61,12 +61,16 @@ export function MessageBubble({
   const [expanded, setExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content || "")
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<"me" | "everyone" | null>(null)
   const editInputRef = useRef<HTMLTextAreaElement>(null)
 
   const timestamp = format(new Date(message.createdAt), "HH:mm")
   const isLong = (message.content?.length ?? 0) > COLLAPSED_CHAR_LIMIT
-  const isDeleted = message.isDeleted === "true"
+
+  // Detect deleted state: explicit flag OR text message with null content
+  // (server rejects empty TEXT messages, so content:null + type:TEXT means deleted)
+  const isDeleted =
+    message.isDeleted === true || (message.content === null && message.type === "TEXT")
   const effectivelyGrouped = isGrouped && !isDeleted
   const messageStatus = (message.status?.toLowerCase() ?? "sent") as
     | "sending"
@@ -103,14 +107,45 @@ export function MessageBubble({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex w-full justify-center mb-1"
+        className={cn(
+          "group flex w-full",
+          isSelf ? "justify-end" : "justify-start",
+          effectivelyGrouped ? "mb-1" : "mb-4",
+        )}
       >
-        <div className="flex items-center gap-2 max-w-[240px] w-full px-2 select-none">
-          <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
-          <span className="text-[10px] text-neutral-400 italic whitespace-nowrap">
-            Message deleted
-          </span>
-          <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
+        <div className={cn("flex max-w-[65%] gap-3", isSelf ? "flex-row-reverse" : "flex-row")}>
+          {!isSelf && !effectivelyGrouped && (
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-xs font-medium text-indigo-700 dark:text-indigo-300 shadow-sm">
+              {getInitials(message.senderName || "U")}
+            </div>
+          )}
+          {!isSelf && effectivelyGrouped && <div className="size-8 shrink-0" />}
+          <div className="flex flex-col min-w-0 max-w-full">
+            {!isSelf && !effectivelyGrouped && (
+              <span className="text-[10px] font-medium text-neutral-400 mb-1.5 ml-1.5">
+                {message.senderName}
+              </span>
+            )}
+            <div
+              className={cn(
+                "px-5 py-3 rounded-3xl select-none",
+                isSelf
+                  ? "bg-neutral-200 dark:bg-neutral-700 rounded-br-md"
+                  : "bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/80 dark:border-neutral-700/60 rounded-tl-md",
+                effectivelyGrouped && isSelf && "rounded-br-md rounded-tr-md",
+                !effectivelyGrouped && isSelf && "rounded-br-md",
+                effectivelyGrouped && !isSelf && "rounded-tl-md rounded-bl-md",
+                !effectivelyGrouped && !isSelf && "rounded-tl-md",
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Trash2 className="size-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
+                <span className="text-sm text-neutral-500 dark:text-neutral-400 italic">
+                  {isSelf ? "You deleted this message" : "Message deleted"}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
     )
@@ -214,7 +249,7 @@ export function MessageBubble({
       >
         {/* Avatar — received only, first in group */}
         {!isSelf && !effectivelyGrouped && (
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-xs font-medium text-indigo-700 dark:text-indigo-300 shadow-sm">
             {getInitials(message.senderName || "U")}
           </div>
         )}
@@ -232,16 +267,17 @@ export function MessageBubble({
             {/* Bubble */}
             <div
               className={cn(
-                "px-5 py-3 msg-text break-words transition-all",
+                "px-5 py-3 msg-text break-words transition-all duration-200",
                 isSelf
                   ? (BUBBLE_THEMES[bubbleTheme]?.outgoing ?? BUBBLE_THEMES.indigo.outgoing) +
-                      " rounded-3xl rounded-br-md"
+                      " rounded-3xl rounded-br-md shadow-sm"
                   : (BUBBLE_THEMES[bubbleTheme]?.incoming ?? BUBBLE_THEMES.indigo.incoming) +
-                      " rounded-3xl rounded-tl-md",
+                      " rounded-3xl rounded-tl-md shadow-sm",
                 effectivelyGrouped && isSelf && "rounded-br-md rounded-tr-md",
                 !effectivelyGrouped && isSelf && "rounded-br-md",
                 effectivelyGrouped && !isSelf && "rounded-tl-md rounded-bl-md",
                 !effectivelyGrouped && !isSelf && "rounded-tl-md",
+                "hover:shadow-md",
               )}
             >
               {/* Reply preview */}
@@ -348,7 +384,13 @@ export function MessageBubble({
                       !isSelf && "border-t border-neutral-200/50 dark:border-neutral-700/30",
                     )}
                   >
-                    {isSelf && <MessageStatusIcon status={messageStatus} variant="inline" />}
+                    {isSelf && (
+                      <MessageStatusIcon
+                        status={messageStatus}
+                        variant="inline"
+                        bubbleTheme={bubbleTheme}
+                      />
+                    )}
                     <span
                       className={cn(
                         "text-[10px] tabular-nums leading-none whitespace-nowrap font-medium",
@@ -369,15 +411,18 @@ export function MessageBubble({
                   aria-label="Message actions"
                   className={cn(
                     "absolute top-1 max-sm:opacity-100 sm:opacity-0 sm:group-hover/bubble:opacity-100",
-                    "transition-opacity size-7 rounded-full flex items-center",
+                    "transition-all duration-200 size-7 rounded-full flex items-center",
                     "justify-center bg-neutral-100 dark:bg-neutral-700",
-                    "text-neutral-500 hover:text-neutral-800 shadow-sm",
+                    "text-neutral-500 hover:text-neutral-800 shadow-sm hover:bg-white dark:hover:bg-neutral-600",
                     isSelf ? "-left-2" : "-right-2",
                   )}
                 >
                   <ChevronDown className="size-3.5" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align={isSelf ? "start" : "end"} className="w-44 rounded-xl">
+                <DropdownMenuContent
+                  align={isSelf ? "start" : "end"}
+                  className="w-44 rounded-xl shadow-lg"
+                >
                   {onReply && (
                     <DropdownMenuItem className="gap-2 text-sm" onClick={() => onReply(message)}>
                       <Reply className="size-4" /> Reply
@@ -395,12 +440,26 @@ export function MessageBubble({
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
+                  {onDelete && (
+                    <DropdownMenuItem
+                      className="gap-2 text-sm text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950/30"
+                      onClick={() => {
+                        if (isSelf) {
+                          setShowDeleteConfirm("me")
+                        } else {
+                          onDelete(message.id, "me")
+                        }
+                      }}
+                    >
+                      <Trash className="size-4" /> Delete for me
+                    </DropdownMenuItem>
+                  )}
                   {isSelf && onDelete && (
                     <DropdownMenuItem
                       className="gap-2 text-sm text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950/30"
-                      onClick={() => setShowDeleteConfirm(true)}
+                      onClick={() => setShowDeleteConfirm("everyone")}
                     >
-                      <Trash2 className="size-4" /> Delete
+                      <Trash2 className="size-4" /> Delete for everyone
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -445,24 +504,33 @@ export function MessageBubble({
       </div>
 
       {/* Delete confirmation dialog */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialog
+        open={showDeleteConfirm !== null}
+        onOpenChange={(open) => !open && setShowDeleteConfirm(null)}
+      >
         <AlertDialogContent className="max-w-sm rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base">Delete message?</AlertDialogTitle>
+            <AlertDialogTitle className="text-base">
+              {showDeleteConfirm === "everyone" ? "Delete for everyone?" : "Delete for me?"}
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-neutral-500">
-              This message will be permanently deleted and cannot be recovered.
+              {showDeleteConfirm === "everyone"
+                ? "This message will be removed for all participants and cannot be recovered."
+                : "This message will be removed from your view only."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel className="rounded-xl h-9 text-sm">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                onDelete?.(message.id)
-                setShowDeleteConfirm(false)
+                if (showDeleteConfirm) {
+                  onDelete?.(message.id, showDeleteConfirm)
+                }
+                setShowDeleteConfirm(null)
               }}
               className="rounded-xl h-9 text-sm bg-red-500 hover:bg-red-600 text-white"
             >
-              Delete
+              {showDeleteConfirm === "everyone" ? "Delete for everyone" : "Delete for me"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

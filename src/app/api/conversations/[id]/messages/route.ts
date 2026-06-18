@@ -1,14 +1,15 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { messages, messageReactions, conversationParticipants, users, files } from "@/lib/schema"
-import { eq, and, desc, lt, inArray } from "drizzle-orm"
+import { eq, and, desc, lt, inArray, sql } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { NextRequest, NextResponse } from "next/server"
 import { MESSAGE_PAGE_SIZE } from "@/lib/constants"
 import { generateId } from "@/lib/id"
 import { csrfGuard } from "@/lib/csrf"
 import { sanitizeMessage } from "@/lib/sanitize"
-import type { Server } from "socket.io"
+import { rateLimitMessages } from "@/lib/rate-limit"
+import { getIO } from "@/lib/socket-server"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -34,7 +35,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!membership) return NextResponse.json({ error: "Not a participant" }, { status: 403 })
 
   // Build query with optional cursor
-  const conditions = [eq(messages.conversationId, conversationId)]
+  const conditions = [
+    eq(messages.conversationId, conversationId),
+    sql`NOT EXISTS (SELECT 1 FROM hidden_messages WHERE hidden_messages.message_id = ${messages.id} AND hidden_messages.user_id = ${session.user.id})`,
+  ]
   if (cursor) {
     // Fetch cursor message's createdAt for keyset pagination
     const [cursorMsg] = await db
@@ -155,6 +159,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const rl = await rateLimitMessages(session.user.id)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many messages. Please slow down." }, { status: 429 })
+  }
+
   const { id: conversationId } = await params
   const body = await req.json()
   const content = body.content ? sanitizeMessage(body.content) : ""
@@ -235,7 +244,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // Emit via Socket.io
-  const io: Server | undefined = (global as Record<string, unknown>).io as Server | undefined
+  const io = getIO()
   if (io) {
     // Broadcast to conversation room (all participants including sender)
     io.to(`conversation:${conversationId}`).emit("message:received", fullMessage)

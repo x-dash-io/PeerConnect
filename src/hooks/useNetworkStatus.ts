@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 
 export function useNetworkStatus() {
-  const [online, setOnline] = useState(navigator.onLine)
+  const [online, setOnline] = useState(true)
 
   const goOnline = useCallback(() => setOnline(true), [])
   const goOffline = useCallback(() => setOnline(false), [])

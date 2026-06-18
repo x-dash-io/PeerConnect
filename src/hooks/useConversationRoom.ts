@@ -12,9 +12,15 @@ export function useConversationRoom(conversationId: string) {
     if (!socket) return
 
     socket.emit("conversation:join", conversationId)
-    queryClient.invalidateQueries({ queryKey: ["conversations"] })
+
+    const handleJoined = () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] })
+    }
+
+    socket.on("conversation:joined", handleJoined)
 
     return () => {
+      socket.off("conversation:joined", handleJoined)
       socket.emit("conversation:leave", conversationId)
     }
   }, [socket, conversationId, queryClient])

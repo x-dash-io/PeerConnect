@@ -8,7 +8,6 @@ interface ChatPreferencesContextValue {
   preferences: ChatPreferences
   fontSize: FontSize
   bubbleTheme: BubbleTheme
-  wallpaper: string | null
   updatePreferences: (updates: Partial<ChatPreferences>) => Promise<void>
   isLoading: boolean
 }
@@ -16,7 +15,6 @@ interface ChatPreferencesContextValue {
 const defaultPreferences: ChatPreferences = {
   fontSize: "medium",
   bubbleTheme: "indigo",
-  wallpaper: null,
 }
 
 const ChatPreferencesContext = createContext<ChatPreferencesContextValue | null>(null)
@@ -64,7 +62,6 @@ export function ChatPreferencesProvider({ children }: { children: React.ReactNod
         preferences,
         fontSize: preferences.fontSize,
         bubbleTheme: preferences.bubbleTheme,
-        wallpaper: preferences.wallpaper,
         updatePreferences,
         isLoading,
       }}
@@ -81,7 +78,6 @@ export function useChatPreferences() {
       preferences: defaultPreferences,
       fontSize: "medium" as FontSize,
       bubbleTheme: "indigo" as BubbleTheme,
-      wallpaper: null as string | null,
       updatePreferences: async () => {},
       isLoading: false,
     }

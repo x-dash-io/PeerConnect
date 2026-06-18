@@ -5,7 +5,8 @@ import { and, eq } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 import { csrfGuard } from "@/lib/csrf"
 import { generateId } from "@/lib/id"
-import type { Server as SocketIOServer } from "socket.io"
+import { rateLimitMessages } from "@/lib/rate-limit"
+import { getIO } from "@/lib/socket-server"
 
 // Add a reaction
 export async function POST(
@@ -18,11 +19,16 @@ export async function POST(
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const rl = await rateLimitMessages(`reaction:${session.user.id}`)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many reactions. Please slow down." }, { status: 429 })
+  }
+
   const { id: conversationId, messageId } = await params
   const { emoji } = await req.json()
 
-  if (!emoji || typeof emoji !== "string") {
-    return NextResponse.json({ error: "Emoji is required" }, { status: 400 })
+  if (!emoji || typeof emoji !== "string" || !/\p{Emoji}/u.test(emoji.trim())) {
+    return NextResponse.json({ error: "A valid single emoji is required" }, { status: 400 })
   }
 
   // Check user is participant
@@ -70,9 +76,7 @@ export async function POST(
     await db.delete(messageReactions).where(eq(messageReactions.id, existing.id))
 
     // Notify via Socket.io
-    const io: SocketIOServer | undefined = (global as Record<string, unknown>).io as
-      | SocketIOServer
-      | undefined
+    const io = getIO()
     if (io) {
       io.to(`conversation:${conversationId}`).emit("message:reaction:removed", {
         conversationId,
@@ -101,9 +105,7 @@ export async function POST(
   }
 
   // Notify via Socket.io
-  const io: SocketIOServer | undefined = (global as Record<string, unknown>).io as
-    | SocketIOServer
-    | undefined
+  const io = getIO()
   if (io) {
     io.to(`conversation:${conversationId}`).emit("message:reaction:added", {
       conversationId,

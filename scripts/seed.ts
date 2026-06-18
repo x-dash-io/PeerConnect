@@ -59,7 +59,7 @@ const seedUsers = [
 ]
 
 async function seed() {
-  console.log("🌱 Seeding database...")
+  console.log("Seeding database...")
 
   const hashedPassword = await bcrypt.hash(SEED_PASSWORD, 10)
   const now = new Date()
@@ -131,7 +131,7 @@ async function seed() {
     console.log(`  + Conversation: ${user1.name} <-> ${user2.name} (${c.messages.length} messages)`)
   }
 
-  console.log("\n✅ Seed complete!")
+  console.log("\n Seed complete!")
   console.log(`\n   Login with any seeded user:`)
   console.log(`   Email:    alice@example.com (or bob, carol, dave, eve)`)
   console.log(`   Password: ${SEED_PASSWORD}`)

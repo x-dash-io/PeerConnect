@@ -12,8 +12,12 @@ const bubbleThemeSchema = z.enum(["indigo", "emerald", "violet", "rose", "amber"
 const preferencesSchema = z.object({
   fontSize: fontSizeSchema.optional(),
   bubbleTheme: bubbleThemeSchema.optional(),
-  wallpaper: z.string().nullable().optional(),
 })
+
+const defaultPreferences = {
+  fontSize: "medium",
+  bubbleTheme: "indigo",
+}
 
 export async function GET() {
   const session = await auth()
@@ -21,21 +25,23 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const [user] = await db
-    .select({ chatPreferences: users.chatPreferences })
-    .from(users)
-    .where(eq(users.id, session.user.id))
+  try {
+    const [user] = await db
+      .select({ chatPreferences: users.chatPreferences })
+      .from(users)
+      .where(eq(users.id, session.user.id))
 
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 })
+    if (!user) {
+      return NextResponse.json(defaultPreferences)
+    }
+
+    return NextResponse.json({
+      ...defaultPreferences,
+      ...((user.chatPreferences as Record<string, unknown>) ?? {}),
+    })
+  } catch {
+    return NextResponse.json(defaultPreferences)
   }
-
-  return NextResponse.json({
-    fontSize: "medium",
-    bubbleTheme: "indigo",
-    wallpaper: null,
-    ...((user.chatPreferences as Record<string, unknown>) ?? {}),
-  })
 }
 
 export async function PATCH(req: NextRequest) {
@@ -58,26 +64,39 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Merge with existing preferences
-  const [existing] = await db
-    .select({ chatPreferences: users.chatPreferences })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-
-  const current = (existing?.chatPreferences ?? {}) as Record<string, unknown>
-
-  const merged = {
-    fontSize: "medium",
-    bubbleTheme: "indigo",
-    wallpaper: null,
-    ...current,
-    ...parsed.data,
-    ...(parsed.data.wallpaper === null ? { wallpaper: null } : {}),
+  let current: Record<string, unknown> = {}
+  try {
+    const [existing] = await db
+      .select({ chatPreferences: users.chatPreferences })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+    current = (existing?.chatPreferences ?? {}) as Record<string, unknown>
+  } catch {
+    // Column may not exist yet
   }
 
-  await db
-    .update(users)
-    .set({ chatPreferences: merged, updatedAt: new Date() })
-    .where(eq(users.id, session.user.id))
+  const merged = {
+    ...defaultPreferences,
+    ...current,
+    ...parsed.data,
+  }
+
+  try {
+    await db
+      .update(users)
+      .set({ chatPreferences: merged, updatedAt: new Date() })
+      .where(eq(users.id, session.user.id))
+  } catch (error) {
+    const isMissingColumn = error instanceof Error && error.message.includes("chat_preferences")
+    if (isMissingColumn) {
+      return NextResponse.json(
+        { error: "chat_preferences column not found. Please run database migrations." },
+        { status: 500 },
+      )
+    }
+    console.error("Failed to save preferences:", error)
+    return NextResponse.json({ error: "Failed to save preferences" }, { status: 500 })
+  }
 
   return NextResponse.json(merged)
 }

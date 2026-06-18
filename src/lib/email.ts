@@ -6,8 +6,10 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
   const resetUrl = `${APP_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}`
 
   if (!RESEND_API_KEY) {
-    console.log(`[Email] Would send password reset to ${email}`)
-    console.log(`[Email] Reset URL: ${resetUrl}`)
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[Email] Would send password reset to ${email}`)
+      console.log(`[Email] Reset URL: ${resetUrl}`)
+    }
     return
   }
 
@@ -31,8 +33,10 @@ export async function sendVerificationEmail(email: string, token: string): Promi
   const verifyUrl = `${APP_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`
 
   if (!RESEND_API_KEY) {
-    console.log(`[Email] Would send verification to ${email}`)
-    console.log(`[Email] Verification URL: ${verifyUrl}`)
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[Email] Would send verification to ${email}`)
+      console.log(`[Email] Verification URL: ${verifyUrl}`)
+    }
     return
   }
 

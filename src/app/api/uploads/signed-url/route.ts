@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { getUploadPartUrl } from "@/lib/s3"
 import { NextRequest, NextResponse } from "next/server"
+import { redis } from "@/lib/redis"
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -15,6 +16,11 @@ export async function GET(req: NextRequest) {
 
   if (!uploadId || !key || !partNumberString) {
     return NextResponse.json({ error: "Missing params" }, { status: 400 })
+  }
+
+  const ownerId = await redis.get(`upload:${uploadId}`)
+  if (ownerId !== session.user.id) {
+    return NextResponse.json({ error: "Upload not found" }, { status: 404 })
   }
 
   const partNumber = parseInt(partNumberString)
