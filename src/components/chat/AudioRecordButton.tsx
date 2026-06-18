@@ -10,7 +10,7 @@ import { uploadAudioBlob } from "@/lib/uploader"
 import { toast } from "sonner"
 
 interface AudioRecordButtonProps {
-  onSend: (_fileId: string, _key: string, _duration: number) => void
+  onSend: (fileId: string, key: string, duration: number) => void
   disabled?: boolean
 }
 
